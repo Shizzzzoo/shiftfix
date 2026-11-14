@@ -8,7 +8,7 @@ from decimal import Decimal
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
-from . import storage
+from . import storage, catalog
 from .domain import MACHINES, TERMINAL, RuleError, now, text, transition, visible, canonical_role, manages
 
 TYPES={'image/jpeg','image/png','image/webp'}
@@ -109,7 +109,7 @@ def onboard(data,user):
     department=data.get('department')
     if not isinstance(department,str) or department not in {'production','maintenance','engineering','quality','operations','other'}: raise RuleError('Choose a valid department')
     ids=data.get('machineIds')
-    if not isinstance(ids,list) or len(ids)>4 or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids) or any(i not in {m['id'] for m in MACHINES} for i in ids): raise RuleError('Choose up to four distinct registered machines')
+    if not isinstance(ids,list) or len(ids)>4 or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids) or any(i not in {m['id'] for m in catalog.machines()} for i in ids): raise RuleError('Choose up to four distinct registered machines')
     storage.table().put_item(Item={'PK':'USER#'+user['id'],'SK':'PROFILE','displayName':name,'department':department,'machineIds':ids,'updatedAt':now()})
     return me(user)
 
@@ -165,7 +165,8 @@ def route(method,path,data,user,event):
     user=dict(user,role=canonical_role(user['role']))
     if method=='GET' and path=='/me': return me(user)
     if method=='POST' and path=='/onboarding': return onboard(data,user)
-    if method=='GET' and path=='/machines': return {'items':MACHINES}
+    if path=='/catalog' or path.startswith('/catalog/') or path=='/settings/workflow':return catalog.route(method,path,data,user,event)
+    if method=='GET' and path=='/machines': return {'items':catalog.machines()}
     if method=='GET' and path=='/workorders':
         return {'items':[public(j,user) for j in storage.list_jobs() if visible(j,user)]}
     if method=='POST' and path=='/uploads':
@@ -223,7 +224,7 @@ def route(method,path,data,user,event):
             if data.get('action')=='merge':
                 target=storage.get_job(text(data.get('targetId'),'Target work order',128))
                 if target['status'] in TERMINAL or target['machineId']!=job['machineId']: raise RuleError('Merge into an active work order for the same machine')
-            updated,reason=transition(job,user,data)
+            updated,reason=transition(job,user,data,policy=catalog.workflow())
             extra=[]
             if target:
                 # Lock target too: merging into a concurrently closed job must not succeed.
@@ -246,11 +247,14 @@ def create(data,user,event):
         return signed(previous,user)
     except RuleError as exc:
         if exc.status!=404: raise
-    machine=next((m for m in MACHINES if m['id']==data.get('machineId')),None)
+    expected_revision=catalog.revision()
+    machine=next((m for m in catalog.machines() if m['id']==data.get('machineId')),None)
     if not machine: raise RuleError('Choose a registered machine')
     priority=data.get('priority','medium')
     if not isinstance(priority,str) or priority not in {'low','medium','high','critical'}: raise RuleError('Invalid priority')
     category=text(data.get('category','General'),'Category',100)
+    category_id=data.get('categoryId','')
+    if category_id:category=catalog.get('categories',category_id)['name']
     at=now()
     related=data.get('relatedId','')
     if related:
@@ -258,11 +262,13 @@ def create(data,user,event):
         if not visible(previous,user) or previous['machineId']!=machine['id']: raise RuleError('Related work order must be visible and on this machine')
     all_jobs=storage.list_jobs()
     resolved=[j['id'] for j in all_jobs if j['machineId']==machine['id'] and j['category']==category and j['status']=='closed']
-    job={'possibleResolved':bool(resolved),'relatedResolvedIds':resolved,'PK':'WORK#'+id,'SK':'META','GSI1PK':'WORK','GSI1SK':at,'id':id,'number':'WO-'+id[:8].upper(),'machineId':machine['id'],'machineName':machine['name'],'title':text(data.get('title'),'Title',160),'description':text(data.get('description'),'Description',4000),'category':category,'priority':priority,'status':'pending_review','assignmentStatus':'unassigned','assigneeId':'','assigneeName':'','reporterId':user['id'],'reporterName':user['name'],'createdAt':at,'updatedAt':at,'version':1,'deadlineVersion':0,'deadline':'','deadlineKind':'','overdue':False,'blocked':False,'possibleDuplicate':any(j['machineId']==machine['id'] and j['category']==category and j['status'] not in TERMINAL for j in all_jobs),'attachments':file_metadata(data.get('attachments',[]),user,'before'),'relatedId':related,'requestHash':payload_hash}
-    try: storage.write(job,user,'reported')
+    job={**catalog.snapshot(machine),'archived':False,'possibleResolved':bool(resolved),'relatedResolvedIds':resolved,'PK':'WORK#'+id,'SK':'META','GSI1PK':'WORK','GSI1SK':at,'id':id,'number':'WO-'+id[:8].upper(),'machineId':machine['id'],'machineName':machine['name'],'title':text(data.get('title'),'Title',160),'description':text(data.get('description'),'Description',4000),'category':category,'priority':priority,'status':'pending_review','assignmentStatus':'unassigned','assigneeId':'','assigneeName':'','reporterId':user['id'],'reporterName':user['name'],'createdAt':at,'updatedAt':at,'version':1,'deadlineVersion':0,'deadline':'','deadlineKind':'','overdue':False,'blocked':False,'possibleDuplicate':any(j['machineId']==machine['id'] and j['category']==category and j['status'] not in TERMINAL for j in all_jobs),'attachments':file_metadata(data.get('attachments',[]),user,'before'),'relatedId':related,'requestHash':payload_hash}
+    if category_id:job['categoryId']=category_id
+    try: storage.write(job,user,'reported',extra=[catalog.revision_guard(expected_revision),catalog.work_reference(job)])
     except RuleError as exc:
         if exc.status==409:
-            previous=storage.get_job(id)
+            try: previous=storage.get_job(id)
+            except RuleError: raise exc
             if previous.get('requestHash')==payload_hash: return signed(previous,user)
         raise
     return signed(job,user)

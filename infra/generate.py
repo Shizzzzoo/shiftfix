@@ -61,6 +61,16 @@ for i,path in enumerate(['/','/config.json','/assets/{proxy+}']):
 add('StaticPermission','AWS::Lambda::Permission',{'Action':'lambda:InvokeFunction','FunctionName':ref('Static'),'Principal':'apigateway.amazonaws.com','SourceArn':sub('arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/*')})
 outputs.pop('WebBucket');outputs.pop('DistributionId');outputs['AppUrl']={'Fn::GetAtt':['HttpApi','ApiEndpoint']}
 outputs['StaticFunction']=ref('Static')
+# One managed hourly trigger; actual due plans and occurrences are versioned in DynamoDB.
+role('PlanningRole','lambda.amazonaws.com',[logs,allow(['dynamodb:GetItem','dynamodb:Query','dynamodb:PutItem','dynamodb:UpdateItem','dynamodb:ConditionCheckItem'],arn('Table')),allow(['dynamodb:Query'],sub('${Table.Arn}/index/GSI1')),allow(['sqs:SendMessage'],arn('DeadLetters'))])
+fn('Planning','backend.planning.handler','PlanningRole',{'TABLE_NAME':ref('Table')})
+R['Planning']['Properties']['DeadLetterConfig']={'TargetArn':arn('DeadLetters')}
+add('PlanningInvokeConfig','AWS::Lambda::EventInvokeConfig',{'FunctionName':ref('Planning'),'Qualifier':'$LATEST','MaximumRetryAttempts':2,'MaximumEventAgeInSeconds':3600})
+add('ScheduleGroup','AWS::Scheduler::ScheduleGroup',{'Name':sub('${AWS::StackName}-maintenance')})
+role('ScheduleRole','scheduler.amazonaws.com',[allow(['lambda:InvokeFunction'],arn('Planning')),allow(['sqs:SendMessage'],arn('DeadLetters'))])
+R['ScheduleRole']['Properties']['AssumeRolePolicyDocument']['Statement'][0]['Condition']={'StringEquals':{'aws:SourceAccount':ref('AWS::AccountId')},'ArnEquals':{'aws:SourceArn':arn('ScheduleGroup')}}
+add('MaintenanceSchedule','AWS::Scheduler::Schedule',{'Name':sub('${AWS::StackName}-hourly-maintenance'),'GroupName':ref('ScheduleGroup'),'Description':'Check enabled preventive maintenance plans hourly','ScheduleExpression':'rate(1 hour)','FlexibleTimeWindow':{'Mode':'OFF'},'State':'ENABLED','Target':{'Arn':arn('Planning'),'RoleArn':arn('ScheduleRole'),'Input':'{}','RetryPolicy':{'MaximumRetryAttempts':2,'MaximumEventAgeInSeconds':3600},'DeadLetterConfig':{'Arn':arn('DeadLetters')}}})
+outputs['PlanningFunction']=ref('Planning')
 t={'AWSTemplateFormatVersion':'2010-09-09','Description':'ShiftFix - private factory fault evidence, role-based repair review and durable deadline escalation.','Metadata':{'AWSToolsMetrics':{'AWSAgentToolkit':'aws-cloudformation@3'}},'Parameters':{'CodeBucket':{'Type':'String'},'CodeKey':{'Type':'String'},'SupervisorEmail':{'Type':'String'}},'Resources':R,'Outputs':{k:{'Value':v} for k,v in outputs.items()}}
 Path(__file__).with_name('template.json').write_text(json.dumps(t,indent=2))
 print(len(json.dumps(t)), 'bytes')

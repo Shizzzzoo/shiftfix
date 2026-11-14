@@ -1,3 +1,6 @@
+import { OperationsWorkspace } from "./components/OperationsWorkspace";
+import { Navigation } from "./components/Navigation";
+import { OPERATIONS_PAGES } from "./operations-schema";
 import React, { useState, useEffect, useRef, useId } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -20,6 +23,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import "./style.css";
+import "./operations.css";
 import { Onboarding } from "./components/Onboarding";
 import { PhotoInput } from "./components/PhotoInput";
 import { validateImages } from "./uploads";
@@ -81,6 +85,7 @@ const labels: Item = {
   closed: "Closed",
   rejected: "Rejected",
   merged: "Merged",
+  skipped: "Skipped",
 };
 const fmt = (s: string) =>
   s
@@ -337,7 +342,7 @@ function App() {
     [machines, setMachines] = useState<Item[]>([]),
     [users, setUsers] = useState<Item[]>([]),
     [selected, setSelected] = useState<Item | null>(null),
-    [page, setPage] = useState("Review inbox"),
+    [page, setPage] = useState("Overview"),
     [tab, setTab] = useState("All requests"),
     [search, setSearch] = useState(""),
     [priority, setPriority] = useState("all"),
@@ -389,7 +394,7 @@ function App() {
       if (["admin", "manager"].includes(m.role)) {
         let u = await api("/users");
         setUsers(u.items);
-      } else setPage("Work orders");
+      } else if (!me) setPage("Work orders");
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -477,7 +482,9 @@ function App() {
       />
     );
   let live = items.filter(
-      (w) => !["closed", "rejected", "merged"].includes(w.status),
+      (w) =>
+        !w.archived &&
+        !["closed", "rejected", "merged", "skipped"].includes(w.status),
     ),
     review = live.filter(
       (w) =>
@@ -486,7 +493,9 @@ function App() {
         w.possibleDuplicate ||
         w.overdue,
     ),
-    filtered = (page === "Review inbox" ? review : items)
+    filtered = (
+      page === "Review inbox" ? review : items.filter((w) => !w.archived)
+    )
       .filter(
         (w) =>
           !search ||
@@ -521,29 +530,15 @@ function App() {
             ShiftFix<small>Maintenance operations</small>
           </div>
         </div>
-        <nav aria-label="Main navigation">
-          {[
-            ["Overview", LayoutDashboard],
-            ...(supervisor ? [["Review inbox", Inbox]] : []),
-            ["Work orders", ClipboardList],
-            ["Machines", Settings],
-            ["Help & accessibility", AlertCircle],
-          ].map(([n, I]: any) => (
-            <button
-              key={n}
-              aria-current={page === n ? "page" : undefined}
-              className={page === n ? "active" : ""}
-              onClick={() => {
-                setPage(n);
-                setSelected(null);
-                setTab("All requests");
-              }}
-            >
-              <I size={20} />
-              {n}
-            </button>
-          ))}
-        </nav>
+        <Navigation
+          page={page}
+          role={me?.role || "reporter"}
+          onSelect={(n) => {
+            setPage(n);
+            setSelected(null);
+            setTab("All requests");
+          }}
+        />
         <div className="sidebar-bottom">
           <div className="avatar">
             {(me?.name || "S").slice(0, 2).toUpperCase()}
@@ -620,688 +615,764 @@ function App() {
               </button>
             </div>
           )}
-          <div className="stats">
-            {[
-              [ClipboardList, "Needs review", review.length],
-              [
-                RefreshCw,
-                "In progress",
-                live.filter((w) => w.status === "in_progress").length,
-              ],
-              [AlertCircle, "Overdue", live.filter((w) => w.overdue).length],
-              [
-                CheckCircle2,
-                "Closed today",
-                items.filter(
-                  (w) =>
-                    w.status === "closed" &&
-                    w.closedAt &&
-                    new Date(w.closedAt).toDateString() ===
-                      new Date().toDateString(),
-                ).length,
-              ],
-            ].map(([I, l, n]: any) => (
-              <div key={l}>
-                <I size={26} />
-                <div>
-                  <span>{l}</span>
-                  <strong>{String(n).padStart(2, "0")}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
-          {page === "Help & accessibility" ? (
-            <section className="panel help-panel">
-              <h2>Make ShiftFix work for you.</h2>
-              <p>
-                Keyboard-friendly controls, clear decisions, and a workspace you
-                can read comfortably.
-              </p>
-              <div className="preference">
-                <div>
-                  <h3>High contrast</h3>
-                  <p>
-                    Stronger text, borders, and status labels. Status is always
-                    written in text, not just color.
-                  </p>
-                </div>
-                <button
-                  aria-pressed={contrast}
-                  onClick={() => setContrast(!contrast)}
-                >
-                  {contrast ? "High contrast on" : "Turn on high contrast"}
-                </button>
-              </div>
-              <div className="preference">
-                <div>
-                  <h3>Larger interface text</h3>
-                  <p>
-                    Increase text in tables, forms, and repair details. Browser
-                    zoom is also supported.
-                  </p>
-                </div>
-                <button
-                  aria-pressed={largeText}
-                  onClick={() => setLargeText(!largeText)}
-                >
-                  {largeText ? "Larger text on" : "Use larger text"}
-                </button>
-              </div>
-              <h3>Your role: {roleLabels[me?.role]}</h3>
-              <p>
-                Admins manage access and operations. Managers review, assign and
-                verify. Workers carry out assigned repairs. Reporters submit
-                faults and track their own reports.
-              </p>
-              <h3>Keyboard navigation</h3>
-              <p>
-                Use Tab and Shift+Tab to move between controls, Enter to
-                activate, and Escape to close the fault report. The report form
-                keeps focus inside and returns it to the opening control when
-                closed.
-              </p>
-              <h3>Evidence and completed repairs</h3>
-              <p>
-                Choose up to 5 JPEG, PNG or WebP photos, each no larger than 5
-                MB. Oversized files are rejected before upload. A previously
-                repaired fault is flagged for manager review; it might be a new
-                recurrence and is never automatically discarded.
-              </p>
-              <h3>Your profile</h3>
-              <p>
-                {me?.profile?.displayName || me?.name} ·{" "}
-                {me?.profile?.department || "Department not set"}
-              </p>
-            </section>
-          ) : page === "Machines" ? (
-            <section className="panel machines">
-              <h2>Machine registry</h2>
-              <p>Prototype registry for Plant 01.</p>
-              {machines.map((m) => (
-                <div className="machine" key={m.id}>
-                  <Factory />
-                  <div>
-                    <strong>
-                      {m.id} · {m.name}
-                    </strong>
-                    <small>{m.location}</small>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setPage("Work orders");
-                      setSearch(m.id);
-                    }}
-                  >
-                    View work orders
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              ))}
-            </section>
+          {OPERATIONS_PAGES.includes(page) && me ? (
+            <OperationsWorkspace
+              key={page}
+              page={page}
+              me={me}
+              items={items}
+              machines={machines}
+              users={users}
+              api={api}
+              open={(id) => {
+                setPage("Work orders");
+                detail(id);
+              }}
+              refresh={load}
+            />
           ) : (
             <>
-              <div className="toolbar">
-                <div className="tabs">
-                  {[
-                    "All requests",
-                    "New reports",
-                    "Duplicates",
-                    "Returned",
-                    "Verification",
-                  ].map((t) => (
-                    <button
-                      key={t}
-                      aria-pressed={tab === t}
-                      className={tab === t ? "chosen" : ""}
-                      onClick={() => setTab(t)}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                <div className="filters">
-                  <label className="search">
-                    <Search size={17} />
-                    <input
-                      aria-label="Search work orders"
-                      placeholder="Search WO, machine, or keyword…"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </label>
-                  <select
-                    aria-label="Filter priority"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                  >
-                    <option value="all">Priority: All</option>
-                    {["low", "medium", "high", "critical"].map((p) => (
-                      <option key={p}>{p}</option>
-                    ))}
-                  </select>
-                  <button
-                    aria-label="Refresh work orders"
-                    onClick={() => {
-                      load();
-                      if (selected) detail(selected.id);
-                    }}
-                  >
-                    <RefreshCw size={17} className={loading ? "spin" : ""} />
-                  </button>
-                </div>
-              </div>
-              <div className={"workspace " + (selected ? "has-detail" : "")}>
-                <section className="panel list">
-                  <table>
-                    <caption className="sr-only">
-                      Work orders. Open a request to review its evidence and
-                      history.
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Request</th>
-                        <th scope="col">Priority</th>
-                        <th scope="col">Owner</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((w) => (
-                        <tr
-                          onClick={() => detail(w.id)}
-                          className={selected?.id === w.id ? "selected" : ""}
-                          key={w.id}
-                        >
-                          <td>
-                            <div className="request">
-                              <ClipboardList size={20} />
-                              <div>
-                                <button
-                                  className="request-button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    detail(w.id);
-                                  }}
-                                  aria-label={`Open ${w.number}: ${w.title}`}
-                                >
-                                  {w.title}
-                                </button>
-                                <small>
-                                  {w.number} · {w.machineId} · {w.machineName}
-                                </small>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={"badge " + w.priority}>
-                              {w.priority}
-                            </span>
-                          </td>
-                          <td>{w.assigneeName || "Unassigned"}</td>
-                          <td>
-                            <span
-                              className={
-                                "badge " + (w.overdue ? "critical" : "status")
-                              }
-                            >
-                              {w.overdue
-                                ? "Overdue"
-                                : w.assignmentStatus === "returned"
-                                  ? "Returned"
-                                  : labels[w.status]}
-                            </span>
-                            {w.possibleDuplicate && (
-                              <small className="duplicate">
-                                Possible duplicate
-                              </small>
-                            )}
-                            {w.possibleResolved && (
-                              <small className="duplicate">
-                                Previously repaired · Review
-                              </small>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {!filtered.length && (
-                    <div className="empty">
-                      <Inbox size={38} />
-                      <h3>
-                        {loading
-                          ? "Loading work orders…"
-                          : "A clear queue starts here."}
-                      </h3>
-                      <p>
-                        {search || tab !== "All requests"
-                          ? "No work orders match these filters."
-                          : "Report your first machine fault to start tracking repairs."}
-                      </p>
-                      <button onClick={() => setReport(true)}>
-                        <Plus size={16} />
-                        Report a fault
-                      </button>
+              <div className="stats">
+                {[
+                  [ClipboardList, "Needs review", review.length],
+                  [
+                    RefreshCw,
+                    "In progress",
+                    live.filter((w) => w.status === "in_progress").length,
+                  ],
+                  [
+                    AlertCircle,
+                    "Overdue",
+                    live.filter((w) => w.overdue).length,
+                  ],
+                  [
+                    CheckCircle2,
+                    "Closed today",
+                    items.filter(
+                      (w) =>
+                        w.status === "closed" &&
+                        w.closedAt &&
+                        new Date(w.closedAt).toDateString() ===
+                          new Date().toDateString(),
+                    ).length,
+                  ],
+                ].map(([I, l, n]: any) => (
+                  <div key={l}>
+                    <I size={26} />
+                    <div>
+                      <span>{l}</span>
+                      <strong>{String(n).padStart(2, "0")}</strong>
                     </div>
-                  )}
-                  <footer>
-                    Showing {filtered.length}{" "}
-                    {page === "Review inbox"
-                      ? "requests requiring attention"
-                      : "work orders"}
-                  </footer>
-                </section>
-                {selected && (
-                  <section className="panel detail">
+                  </div>
+                ))}
+              </div>
+              {page === "Help & accessibility" ? (
+                <section className="panel help-panel">
+                  <h2>Make ShiftFix work for you.</h2>
+                  <p>
+                    Keyboard-friendly controls, clear decisions, and a workspace
+                    you can read comfortably.
+                  </p>
+                  <div className="preference">
+                    <div>
+                      <h3>High contrast</h3>
+                      <p>
+                        Stronger text, borders, and status labels. Status is
+                        always written in text, not just color.
+                      </p>
+                    </div>
                     <button
-                      className="mobile-back"
-                      onClick={() => setSelected(null)}
+                      aria-pressed={contrast}
+                      onClick={() => setContrast(!contrast)}
                     >
-                      <ArrowLeft size={16} /> Back to work orders
+                      {contrast ? "High contrast on" : "Turn on high contrast"}
                     </button>
-                    <div className="detail-title">
+                  </div>
+                  <div className="preference">
+                    <div>
+                      <h3>Larger interface text</h3>
+                      <p>
+                        Increase text in tables, forms, and repair details.
+                        Browser zoom is also supported.
+                      </p>
+                    </div>
+                    <button
+                      aria-pressed={largeText}
+                      onClick={() => setLargeText(!largeText)}
+                    >
+                      {largeText ? "Larger text on" : "Use larger text"}
+                    </button>
+                  </div>
+                  <h3>Your role: {roleLabels[me?.role]}</h3>
+                  <p>
+                    Admins manage access and operations. Managers review, assign
+                    and verify. Workers carry out assigned repairs. Reporters
+                    submit faults and track their own reports.
+                  </p>
+                  <h3>Keyboard navigation</h3>
+                  <p>
+                    Use Tab and Shift+Tab to move between controls, Enter to
+                    activate, and Escape to close the fault report. The report
+                    form keeps focus inside and returns it to the opening
+                    control when closed.
+                  </p>
+                  <h3>Evidence and completed repairs</h3>
+                  <p>
+                    Choose up to 5 JPEG, PNG or WebP photos, each no larger than
+                    5 MB. Oversized files are rejected before upload. A
+                    previously repaired fault is flagged for manager review; it
+                    might be a new recurrence and is never automatically
+                    discarded.
+                  </p>
+                  <h3>Your profile</h3>
+                  <p>
+                    {me?.profile?.displayName || me?.name} ·{" "}
+                    {me?.profile?.department || "Department not set"}
+                  </p>
+                </section>
+              ) : page === "Machines" ? (
+                <section className="panel machines">
+                  <h2>Machine registry</h2>
+                  <p>Prototype registry for Plant 01.</p>
+                  {machines.map((m) => (
+                    <div className="machine" key={m.id}>
+                      <Factory />
                       <div>
-                        <span className="mono muted">{selected.number}</span>
-                        <h2 id="detail-heading" tabIndex={-1}>
-                          {selected.title}
-                        </h2>
+                        <strong>
+                          {m.id} · {m.name}
+                        </strong>
+                        <small>{m.location}</small>
                       </div>
                       <button
-                        title="Close detail"
-                        onClick={() => setSelected(null)}
+                        onClick={() => {
+                          setPage("Work orders");
+                          setSearch(m.id);
+                        }}
                       >
-                        <X size={18} />
+                        View work orders
+                        <ChevronRight size={16} />
                       </button>
                     </div>
-                    {selected.possibleResolved && (
-                      <div className="notice">
-                        <strong>Similar repair already completed</strong>
-                        <p>
-                          This may be an already-handled fault or a new
-                          recurrence. A Manager must review before closing it.
-                        </p>
-                        {supervisor &&
-                          selected.resolvedCandidates?.map((r: Item) => (
-                            <button key={r.id} onClick={() => detail(r.id)}>
-                              View {r.number} · {r.title}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                    <div className="detail-machine">
-                      <Factory size={19} />
-                      <b>{selected.machineId}</b>
-                      {selected.machineName}
-                      <span className={"badge " + selected.priority}>
-                        {selected.priority}
-                      </span>
-                    </div>
-                    <h4>Description</h4>
-                    <p>{selected.description}</p>
-                    {selected.mergedInto && (
-                      <p>
-                        Merged into{" "}
-                        <button onClick={() => detail(selected.mergedInto)}>
-                          View surviving work order
-                        </button>
-                      </p>
-                    )}
-                    {selected.relatedId && (
-                      <button onClick={() => detail(selected.relatedId)}>
-                        View related work order
-                      </button>
-                    )}
-                    {selected.linkedReports?.length > 0 && (
-                      <div className="notice">
-                        Merged reports:{" "}
-                        {selected.linkedReports.map((r: Item) => (
-                          <button key={r.id} onClick={() => detail(r.id)}>
-                            {r.number || r.id}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="photos">
-                      {selected.attachments?.map((a: Item) => (
-                        <a
-                          key={a.key}
-                          href={a.url}
-                          target="_blank"
-                          rel="noreferrer"
+                  ))}
+                </section>
+              ) : (
+                <>
+                  <div className="toolbar">
+                    <div className="tabs">
+                      {[
+                        "All requests",
+                        "New reports",
+                        "Duplicates",
+                        "Returned",
+                        "Verification",
+                      ].map((t) => (
+                        <button
+                          key={t}
+                          aria-pressed={tab === t}
+                          className={tab === t ? "chosen" : ""}
+                          onClick={() => setTab(t)}
                         >
-                          <img src={a.url} alt={a.name} />
-                          <small>
-                            {a.stage === "after"
-                              ? "Repair evidence"
-                              : "Reported evidence"}
-                          </small>
-                        </a>
+                          {t}
+                        </button>
                       ))}
                     </div>
-                    <dl>
-                      <dt>Reported by</dt>
-                      <dd>{selected.reporterName}</dd>
-                      <dt>Work status</dt>
-                      <dd>{labels[selected.status]}</dd>
-                      <dt>Assignment</dt>
-                      <dd>{selected.assignmentStatus?.replaceAll("_", " ")}</dd>
-                      <dt>Assigned to</dt>
-                      <dd>{selected.assigneeName || "Unassigned"}</dd>
-                      <dt>Due</dt>
-                      <dd className={selected.overdue ? "orange" : ""}>
-                        {fmt(selected.deadline)}
-                      </dd>
-                    </dl>
-                    {!["closed", "rejected", "merged"].includes(
-                      selected.status,
-                    ) && (
-                      <div className="action-form">
-                        {supervisor && (
-                          <>
-                            <label>
-                              Responsible worker
-                              <select
-                                value={assignee}
-                                onChange={(e) => setAssignee(e.target.value)}
-                              >
-                                <option value="">Select worker</option>
-                                {users
-                                  .filter((u) => u.role === "worker")
-                                  .map((u) => (
-                                    <option value={u.id} key={u.id}>
-                                      {u.name} · {u.role}
-                                    </option>
-                                  ))}
-                              </select>
-                            </label>
-                            {selected.possibleDuplicate && (
-                              <label>
-                                Related work order
-                                <select
-                                  value={target}
-                                  onChange={(e) => setTarget(e.target.value)}
+                    <div className="filters">
+                      <label className="search">
+                        <Search size={17} />
+                        <input
+                          aria-label="Search work orders"
+                          placeholder="Search WO, machine, or keyword…"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                        />
+                      </label>
+                      <select
+                        aria-label="Filter priority"
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value)}
+                      >
+                        <option value="all">Priority: All</option>
+                        {["low", "medium", "high", "critical"].map((p) => (
+                          <option key={p}>{p}</option>
+                        ))}
+                      </select>
+                      <button
+                        aria-label="Refresh work orders"
+                        onClick={() => {
+                          load();
+                          if (selected) detail(selected.id);
+                        }}
+                      >
+                        <RefreshCw
+                          size={17}
+                          className={loading ? "spin" : ""}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className={"workspace " + (selected ? "has-detail" : "")}
+                  >
+                    <section className="panel list">
+                      <table>
+                        <caption className="sr-only">
+                          Work orders. Open a request to review its evidence and
+                          history.
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Request</th>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Owner</th>
+                            <th scope="col">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filtered.map((w) => (
+                            <tr
+                              onClick={() => detail(w.id)}
+                              className={
+                                selected?.id === w.id ? "selected" : ""
+                              }
+                              key={w.id}
+                            >
+                              <td>
+                                <div className="request">
+                                  <ClipboardList size={20} />
+                                  <div>
+                                    <button
+                                      className="request-button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        detail(w.id);
+                                      }}
+                                      aria-label={`Open ${w.number}: ${w.title}`}
+                                    >
+                                      {w.title}
+                                    </button>
+                                    <small>
+                                      {w.number} · {w.machineId} ·{" "}
+                                      {w.machineName}
+                                    </small>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <span className={"badge " + w.priority}>
+                                  {w.priority}
+                                </span>
+                              </td>
+                              <td>{w.assigneeName || "Unassigned"}</td>
+                              <td>
+                                <span
+                                  className={
+                                    "badge " +
+                                    (w.overdue ? "critical" : "status")
+                                  }
                                 >
-                                  <option value="">Choose merge target</option>
-                                  {items
-                                    .filter(
-                                      (w) =>
-                                        w.id !== selected.id &&
-                                        w.machineId === selected.machineId &&
-                                        ![
-                                          "merged",
-                                          "rejected",
-                                          "closed",
-                                        ].includes(w.status),
-                                    )
-                                    .map((w) => (
-                                      <option key={w.id} value={w.id}>
-                                        {w.number} · {w.title}
+                                  {w.overdue
+                                    ? "Overdue"
+                                    : w.assignmentStatus === "returned"
+                                      ? "Returned"
+                                      : labels[w.status]}
+                                </span>
+                                {w.possibleDuplicate && (
+                                  <small className="duplicate">
+                                    Possible duplicate
+                                  </small>
+                                )}
+                                {w.possibleResolved && (
+                                  <small className="duplicate">
+                                    Previously repaired · Review
+                                  </small>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {!filtered.length && (
+                        <div className="empty">
+                          <Inbox size={38} />
+                          <h3>
+                            {loading
+                              ? "Loading work orders…"
+                              : "A clear queue starts here."}
+                          </h3>
+                          <p>
+                            {search || tab !== "All requests"
+                              ? "No work orders match these filters."
+                              : "Report your first machine fault to start tracking repairs."}
+                          </p>
+                          <button onClick={() => setReport(true)}>
+                            <Plus size={16} />
+                            Report a fault
+                          </button>
+                        </div>
+                      )}
+                      <footer>
+                        Showing {filtered.length}{" "}
+                        {page === "Review inbox"
+                          ? "requests requiring attention"
+                          : "work orders"}
+                      </footer>
+                    </section>
+                    {selected && (
+                      <section className="panel detail">
+                        <button
+                          className="mobile-back"
+                          onClick={() => setSelected(null)}
+                        >
+                          <ArrowLeft size={16} /> Back to work orders
+                        </button>
+                        <div className="detail-title">
+                          <div>
+                            <span className="mono muted">
+                              {selected.number}
+                            </span>
+                            <h2 id="detail-heading" tabIndex={-1}>
+                              {selected.title}
+                            </h2>
+                          </div>
+                          <button
+                            title="Close detail"
+                            onClick={() => setSelected(null)}
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                        {selected.possibleResolved && (
+                          <div className="notice">
+                            <strong>Similar repair already completed</strong>
+                            <p>
+                              This may be an already-handled fault or a new
+                              recurrence. A Manager must review before closing
+                              it.
+                            </p>
+                            {supervisor &&
+                              selected.resolvedCandidates?.map((r: Item) => (
+                                <button key={r.id} onClick={() => detail(r.id)}>
+                                  View {r.number} · {r.title}
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                        <div className="detail-machine">
+                          <Factory size={19} />
+                          <b>{selected.machineId}</b>
+                          {selected.machineName}
+                          <span className={"badge " + selected.priority}>
+                            {selected.priority}
+                          </span>
+                        </div>
+                        <h4>Description</h4>
+                        <p>{selected.description}</p>
+                        {selected.mergedInto && (
+                          <p>
+                            Merged into{" "}
+                            <button onClick={() => detail(selected.mergedInto)}>
+                              View surviving work order
+                            </button>
+                          </p>
+                        )}
+                        {selected.relatedId && (
+                          <button onClick={() => detail(selected.relatedId)}>
+                            View related work order
+                          </button>
+                        )}
+                        {selected.linkedReports?.length > 0 && (
+                          <div className="notice">
+                            Merged reports:{" "}
+                            {selected.linkedReports.map((r: Item) => (
+                              <button key={r.id} onClick={() => detail(r.id)}>
+                                {r.number || r.id}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="photos">
+                          {selected.attachments?.map((a: Item) => (
+                            <a
+                              key={a.key}
+                              href={a.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <img src={a.url} alt={a.name} />
+                              <small>
+                                {a.stage === "after"
+                                  ? "Repair evidence"
+                                  : "Reported evidence"}
+                              </small>
+                            </a>
+                          ))}
+                        </div>
+                        <dl>
+                          <dt>Reported by</dt>
+                          <dd>{selected.reporterName}</dd>
+                          <dt>Work status</dt>
+                          <dd>{labels[selected.status]}</dd>
+                          <dt>Assignment</dt>
+                          <dd>
+                            {selected.assignmentStatus?.replaceAll("_", " ")}
+                          </dd>
+                          <dt>Assigned to</dt>
+                          <dd>{selected.assigneeName || "Unassigned"}</dd>
+                          <dt>Due</dt>
+                          <dd className={selected.overdue ? "orange" : ""}>
+                            {fmt(selected.deadline)}
+                          </dd>
+                        </dl>
+                        {!["closed", "rejected", "merged"].includes(
+                          selected.status,
+                        ) && (
+                          <div className="action-form">
+                            {supervisor && (
+                              <>
+                                <label>
+                                  Responsible worker
+                                  <select
+                                    value={assignee}
+                                    onChange={(e) =>
+                                      setAssignee(e.target.value)
+                                    }
+                                  >
+                                    <option value="">Select worker</option>
+                                    {users
+                                      .filter((u) => u.role === "worker")
+                                      .map((u) => (
+                                        <option value={u.id} key={u.id}>
+                                          {u.name} · {u.role}
+                                        </option>
+                                      ))}
+                                  </select>
+                                </label>
+                                {selected.possibleDuplicate && (
+                                  <label>
+                                    Related work order
+                                    <select
+                                      value={target}
+                                      onChange={(e) =>
+                                        setTarget(e.target.value)
+                                      }
+                                    >
+                                      <option value="">
+                                        Choose merge target
                                       </option>
-                                    ))}
-                                </select>
-                              </label>
+                                      {items
+                                        .filter(
+                                          (w) =>
+                                            w.id !== selected.id &&
+                                            w.machineId ===
+                                              selected.machineId &&
+                                            ![
+                                              "merged",
+                                              "rejected",
+                                              "closed",
+                                            ].includes(w.status),
+                                        )
+                                        .map((w) => (
+                                          <option key={w.id} value={w.id}>
+                                            {w.number} · {w.title}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </label>
+                                )}
+                              </>
                             )}
-                          </>
-                        )}
-                        <label>
-                          Notes / decision reason
-                          <textarea
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder="Explain the decision or record repair details…"
-                            rows={3}
-                          />
-                        </label>
-                        {selected.assigneeId === me?.id && (
-                          <PhotoInput
-                            files={files}
-                            onChange={setFiles}
-                            label="Attach repair evidence"
-                          />
-                        )}
-                        <div className="actions">
-                          {supervisor && (
-                            <>
-                              {["pending_review", "needs_details"].includes(
-                                selected.status,
-                              ) && (
-                                <button
-                                  className="primary"
-                                  disabled={busy || !assignee}
-                                  onClick={() => act("approve")}
-                                >
-                                  Approve & assign
-                                </button>
-                              )}
-                              {selected.status === "awaiting_verification" && (
+                            <label>
+                              Notes / decision reason
+                              <textarea
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="Explain the decision or record repair details…"
+                                rows={3}
+                              />
+                            </label>
+                            {selected.assigneeId === me?.id && (
+                              <PhotoInput
+                                files={files}
+                                onChange={setFiles}
+                                label="Attach repair evidence"
+                              />
+                            )}
+                            <div className="actions">
+                              {supervisor && (
                                 <>
-                                  <button
-                                    className="primary"
-                                    disabled={busy}
-                                    onClick={() => act("verify")}
-                                  >
-                                    Accept repair
-                                  </button>
-                                  <button
-                                    disabled={busy || !reason.trim()}
-                                    onClick={() => act("rework")}
-                                  >
-                                    Return for rework
-                                  </button>
-                                </>
-                              )}
-                              {((selected.status === "open" &&
-                                selected.assignmentStatus === "returned") ||
-                                (selected.possibleResolved &&
-                                  ["pending_review", "needs_details"].includes(
+                                  {["pending_review", "needs_details"].includes(
                                     selected.status,
-                                  ))) && (
-                                <button
-                                  className="primary"
-                                  disabled={busy || !reason.trim()}
-                                  onClick={() => act("resolve_existing")}
-                                >
-                                  Confirm already resolved
-                                </button>
-                              )}
-                              {![
-                                "pending_review",
-                                "needs_details",
-                                "awaiting_verification",
-                              ].includes(selected.status) && (
-                                <button
-                                  disabled={busy || !assignee}
-                                  onClick={() => act("reassign")}
-                                >
-                                  Reassign
-                                </button>
-                              )}
-                              {["pending_review", "needs_details"].includes(
-                                selected.status,
-                              ) && (
-                                <>
-                                  <button
-                                    disabled={busy || !reason.trim()}
-                                    onClick={() => act("clarify")}
-                                  >
-                                    Request details
-                                  </button>
-                                  <button
-                                    className="danger"
-                                    disabled={busy || !reason.trim()}
-                                    onClick={() => act("reject")}
-                                  >
-                                    Reject report
-                                  </button>
-                                </>
-                              )}
-                              {selected.possibleDuplicate && (
-                                <>
-                                  <button
-                                    disabled={
-                                      busy ||
-                                      !target ||
-                                      !reason.trim() ||
-                                      ![
+                                  ) && (
+                                    <button
+                                      className="primary"
+                                      disabled={busy || !assignee}
+                                      onClick={() => act("approve")}
+                                    >
+                                      Approve & assign
+                                    </button>
+                                  )}
+                                  {selected.status ===
+                                    "awaiting_verification" && (
+                                    <>
+                                      <button
+                                        className="primary"
+                                        disabled={busy}
+                                        onClick={() => act("verify")}
+                                      >
+                                        Accept repair
+                                      </button>
+                                      <button
+                                        disabled={busy || !reason.trim()}
+                                        onClick={() => act("rework")}
+                                      >
+                                        Return for rework
+                                      </button>
+                                    </>
+                                  )}
+                                  {((selected.status === "open" &&
+                                    selected.assignmentStatus === "returned") ||
+                                    (selected.possibleResolved &&
+                                      [
                                         "pending_review",
                                         "needs_details",
-                                        "open",
-                                      ].includes(selected.status)
-                                    }
-                                    onClick={() => act("merge")}
-                                  >
-                                    Merge duplicate
-                                  </button>
-                                  <button
-                                    disabled={busy || !reason.trim()}
-                                    onClick={() => act("keep_separate")}
-                                  >
-                                    Keep separate
-                                  </button>
-                                </>
-                              )}
-                            </>
-                          )}
-                          {selected.assigneeId === me?.id && (
-                            <>
-                              {selected.assignmentStatus ===
-                                "awaiting_acceptance" && (
-                                <button
-                                  className="primary"
-                                  disabled={busy}
-                                  onClick={() => act("accept")}
-                                >
-                                  Accept assignment
-                                </button>
-                              )}
-                              {selected.assignmentStatus === "accepted" &&
-                                selected.status === "in_progress" && (
-                                  <>
+                                      ].includes(selected.status))) && (
                                     <button
                                       className="primary"
                                       disabled={busy || !reason.trim()}
-                                      onClick={() => act("submit")}
+                                      onClick={() => act("resolve_existing")}
                                     >
-                                      Submit repair
+                                      Confirm already resolved
                                     </button>
+                                  )}
+                                  {![
+                                    "pending_review",
+                                    "needs_details",
+                                    "awaiting_verification",
+                                  ].includes(selected.status) && (
                                     <button
-                                      disabled={busy || !reason.trim()}
-                                      onClick={() => act("block")}
+                                      disabled={busy || !assignee}
+                                      onClick={() => act("reassign")}
                                     >
-                                      Mark blocked
+                                      Reassign
                                     </button>
-                                  </>
-                                )}
-                              {["open", "in_progress"].includes(
-                                selected.status,
-                              ) &&
-                                ["awaiting_acceptance", "accepted"].includes(
-                                  selected.assignmentStatus,
-                                ) && (
+                                  )}
+                                  {["pending_review", "needs_details"].includes(
+                                    selected.status,
+                                  ) && (
+                                    <>
+                                      <button
+                                        disabled={busy || !reason.trim()}
+                                        onClick={() => act("clarify")}
+                                      >
+                                        Request details
+                                      </button>
+                                      <button
+                                        className="danger"
+                                        disabled={busy || !reason.trim()}
+                                        onClick={() => act("reject")}
+                                      >
+                                        Reject report
+                                      </button>
+                                    </>
+                                  )}
+                                  {selected.possibleDuplicate && (
+                                    <>
+                                      <button
+                                        disabled={
+                                          busy ||
+                                          !target ||
+                                          !reason.trim() ||
+                                          ![
+                                            "pending_review",
+                                            "needs_details",
+                                            "open",
+                                          ].includes(selected.status)
+                                        }
+                                        onClick={() => act("merge")}
+                                      >
+                                        Merge duplicate
+                                      </button>
+                                      <button
+                                        disabled={busy || !reason.trim()}
+                                        onClick={() => act("keep_separate")}
+                                      >
+                                        Keep separate
+                                      </button>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              {selected.assigneeId === me?.id && (
+                                <>
+                                  {selected.assignmentStatus ===
+                                    "awaiting_acceptance" && (
+                                    <button
+                                      className="primary"
+                                      disabled={busy}
+                                      onClick={() => act("accept")}
+                                    >
+                                      Accept assignment
+                                    </button>
+                                  )}
+                                  {selected.assignmentStatus === "accepted" &&
+                                    selected.status === "in_progress" && (
+                                      <>
+                                        <button
+                                          className="primary"
+                                          disabled={busy || !reason.trim()}
+                                          onClick={() => act("submit")}
+                                        >
+                                          Submit repair
+                                        </button>
+                                        <button
+                                          disabled={busy || !reason.trim()}
+                                          onClick={() => act("block")}
+                                        >
+                                          Mark blocked
+                                        </button>
+                                      </>
+                                    )}
+                                  {["open", "in_progress"].includes(
+                                    selected.status,
+                                  ) &&
+                                    [
+                                      "awaiting_acceptance",
+                                      "accepted",
+                                    ].includes(selected.assignmentStatus) && (
+                                      <button
+                                        disabled={busy || !reason.trim()}
+                                        onClick={() => act("return")}
+                                      >
+                                        Return assignment
+                                      </button>
+                                    )}
+                                </>
+                              )}
+                              {selected.reporterId === me?.id &&
+                                selected.status === "needs_details" && (
                                   <button
+                                    className="primary"
                                     disabled={busy || !reason.trim()}
-                                    onClick={() => act("return")}
+                                    onClick={() => act("resubmit")}
                                   >
-                                    Return assignment
+                                    Resubmit with details
                                   </button>
                                 )}
-                            </>
-                          )}
-                          {selected.reporterId === me?.id &&
-                            selected.status === "needs_details" && (
                               <button
-                                className="primary"
                                 disabled={busy || !reason.trim()}
-                                onClick={() => act("resubmit")}
+                                onClick={() => act("add_note")}
                               >
-                                Resubmit with details
+                                {busy ? "Saving…" : "Add note"}
                               </button>
-                            )}
-                          <button
-                            disabled={busy || !reason.trim()}
-                            onClick={() => act("add_note")}
-                          >
-                            {busy ? "Saving…" : "Add note"}
+                            </div>
+                          </div>
+                        )}
+                        {["closed", "rejected"].includes(selected.status) && (
+                          <button onClick={() => setReport(true)}>
+                            Report follow-up fault
                           </button>
+                        )}
+                        {supervisor &&
+                          ["closed", "rejected", "merged", "skipped"].includes(
+                            selected.status,
+                          ) && (
+                            <button
+                              disabled={busy}
+                              onClick={() =>
+                                act(selected.archived ? "restore" : "archive")
+                              }
+                            >
+                              {selected.archived
+                                ? "Restore from archive"
+                                : "Archive finished work"}
+                            </button>
+                          )}
+                        {supervisor &&
+                          selected.planId &&
+                          ["pending_review", "open"].includes(
+                            selected.status,
+                          ) && (
+                            <button
+                              disabled={busy || !reason.trim()}
+                              onClick={() => act("skip")}
+                            >
+                              Skip planned occurrence
+                            </button>
+                          )}
+                        <div className="activity">
+                          <h3>Activity</h3>
+                          {selected.activity?.map((a: Item) => (
+                            <div key={a.id}>
+                              <i />
+                              <section>
+                                <strong>{a.action.replaceAll("_", " ")}</strong>
+                                <small>
+                                  {fmt(a.at)} · {a.actorName}
+                                </small>
+                                {a.reason && <p>{a.reason}</p>}
+                              </section>
+                            </div>
+                          ))}
                         </div>
-                      </div>
+                      </section>
                     )}
-                    {["closed", "rejected"].includes(selected.status) && (
-                      <button onClick={() => setReport(true)}>
-                        Report follow-up fault
-                      </button>
-                    )}
-                    <div className="activity">
-                      <h3>Activity</h3>
-                      {selected.activity?.map((a: Item) => (
-                        <div key={a.id}>
-                          <i />
-                          <section>
-                            <strong>{a.action.replaceAll("_", " ")}</strong>
-                            <small>
-                              {fmt(a.at)} · {a.actorName}
-                            </small>
-                            {a.reason && <p>{a.reason}</p>}
-                          </section>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </div>
-            </>
-          )}
-          {supervisor && page === "Overview" && (
-            <section className="panel team">
-              <h2>People & access</h2>
-              <p>
-                {admin
-                  ? "Assign Managers to oversee repairs and Workers to carry out maintenance. Reporters can raise faults."
-                  : "Manage Worker and Reporter access. Admins manage Manager access."}{" "}
-                Roles are enforced by the backend.
-              </p>
-              {users.map((u) => (
-                <div className="team-row" key={u.id}>
-                  <div>
-                    <strong>{u.name}</strong>
-                    <small>{u.email}</small>
                   </div>
-                  <span className="badge status">
-                    {roleLabels[u.role] || u.role}
-                  </span>
-                  {u.role !== "admin" && (admin || u.role !== "manager") && (
-                    <label className="role-select">
-                      <span className="sr-only">Role for {u.name}</span>
-                      <select
-                        disabled={busy}
-                        value={u.role}
-                        onChange={async (e) => {
-                          const role = e.target.value;
-                          setBusy(true);
-                          try {
-                            await api(`/users/${u.id}/role`, { role });
-                            await load();
-                          } catch (e: any) {
-                            setErr(e.message);
-                          } finally {
-                            setBusy(false);
-                          }
-                        }}
-                      >
-                        {(admin
-                          ? ["reporter", "worker", "manager"]
-                          : ["reporter", "worker"]
-                        ).map((r) => (
-                          <option key={r} value={r}>
-                            {roleLabels[r]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
-              ))}
-            </section>
+                </>
+              )}
+              {supervisor && page === "Overview" && (
+                <section className="panel team">
+                  <h2>People & access</h2>
+                  <p>
+                    {admin
+                      ? "Assign Managers to oversee repairs and Workers to carry out maintenance. Reporters can raise faults."
+                      : "Manage Worker and Reporter access. Admins manage Manager access."}{" "}
+                    Roles are enforced by the backend.
+                  </p>
+                  {users.map((u) => (
+                    <div className="team-row" key={u.id}>
+                      <div>
+                        <strong>{u.name}</strong>
+                        <small>{u.email}</small>
+                      </div>
+                      <span className="badge status">
+                        {roleLabels[u.role] || u.role}
+                      </span>
+                      {u.role !== "admin" &&
+                        (admin || u.role !== "manager") && (
+                          <label className="role-select">
+                            <span className="sr-only">Role for {u.name}</span>
+                            <select
+                              disabled={busy}
+                              value={u.role}
+                              onChange={async (e) => {
+                                const role = e.target.value;
+                                setBusy(true);
+                                try {
+                                  await api(`/users/${u.id}/role`, { role });
+                                  await load();
+                                } catch (e: any) {
+                                  setErr(e.message);
+                                } finally {
+                                  setBusy(false);
+                                }
+                              }}
+                            >
+                              {(admin
+                                ? ["reporter", "worker", "manager"]
+                                : ["reporter", "worker"]
+                              ).map((r) => (
+                                <option key={r} value={r}>
+                                  {roleLabels[r]}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                    </div>
+                  ))}
+                </section>
+              )}
+            </>
           )}
         </div>
       </main>
@@ -1439,8 +1510,7 @@ function Report({
           </button>
         </div>
         <p>
-          Capture what you see. Your manager will review and assign the
-          repair.
+          Capture what you see. Your manager will review and assign the repair.
         </p>
         <form onSubmit={submit}>
           <fieldset disabled={busy}>

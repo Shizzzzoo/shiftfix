@@ -3,7 +3,7 @@ import copy
 import os
 from datetime import datetime, timedelta, timezone
 
-TERMINAL = {'closed', 'rejected', 'merged'}
+TERMINAL = {'closed', 'rejected', 'merged', 'skipped'}
 MACHINES = [
     {'id': 'M-012', 'name': 'Hydraulic press', 'location': 'Assembly · Bay 01'},
     {'id': 'M-008', 'name': 'Conveyor belt', 'location': 'Packaging · Line 02'},
@@ -51,8 +51,9 @@ def visible(job, user):
     return manages(user) or job['reporterId'] == user['id'] or job.get('assigneeId') == user['id']
 
 
-def transition(original, user, data, at=None):
+def transition(original, user, data, at=None, policy=None):
     at = at or now()
+    policy = policy or {}
     action = data.get('action')
     if data.get('version') != original['version']:
         raise RuleError('This work order changed. Refresh before acting.', 409)
@@ -60,14 +61,21 @@ def transition(original, user, data, at=None):
     owner = canonical_role(user['role']) == 'worker' and user['id'] == original.get('assigneeId')
     if not visible(original, user):
         raise RuleError('You cannot access this work order', 403)
-    if action in {'approve', 'reassign', 'clarify', 'reject', 'merge', 'verify', 'rework', 'keep_separate', 'resolve_existing'} and not supervisor:
+    if action in {'approve', 'reassign', 'clarify', 'reject', 'merge', 'verify', 'rework', 'keep_separate', 'resolve_existing','skip'} and not supervisor:
         raise RuleError('Manager access required', 403)
     if action in {'accept', 'return', 'start', 'block', 'submit'} and not owner:
         raise RuleError('Only the currently assigned worker can do that', 403)
+    if action in {'archive','restore'}:
+        if not supervisor:raise RuleError('Manager access required',403)
+        if original['status'] not in TERMINAL:raise RuleError('Only terminal work orders can be archived or restored',409)
+        job=copy.deepcopy(original)
+        job.update(archived=action=='archive',version=original['version']+1,updatedAt=at)
+        return job,text(data.get('reason',''),'Reason',2000,False)
+    if original.get('archived'):raise RuleError('Restore this work order before acting',409)
     if original['status'] in TERMINAL:
         raise RuleError('This work order is already closed, rejected or merged', 409)
     reason = data.get('reason', '')
-    if action in {'return', 'clarify', 'reject', 'merge', 'block', 'rework', 'add_note', 'submit', 'keep_separate', 'resubmit', 'resolve_existing'}:
+    if action in {'return', 'clarify', 'reject', 'merge', 'block', 'rework', 'add_note', 'submit', 'keep_separate', 'resubmit', 'resolve_existing','skip'}:
         reason = text(reason, 'Reason')
     elif reason:
         reason = text(reason, 'Reason')
@@ -80,12 +88,12 @@ def transition(original, user, data, at=None):
         job.update(status='open', assignmentStatus='awaiting_acceptance',
                    assigneeId=text(data.get('assigneeId'), 'Worker', 128),
                    assigneeName=text(data.get('assigneeName', data.get('assigneeId')), 'Worker name', 200), blocked=False)
-        schedule(job, 'acknowledgment', int(os.environ.get('ACK_SECONDS', '3600')), at)
+        schedule(job, 'acknowledgment', int(policy.get('ackMinutes',int(os.environ.get('ACK_SECONDS','3600'))//60))*60, at)
     elif action in {'accept', 'start'}:
         if job['status'] != 'open' or job['assignmentStatus'] != 'awaiting_acceptance':
             raise RuleError('Assignment is not awaiting acceptance', 409)
         job.update(status='in_progress', assignmentStatus='accepted', blocked=False)
-        schedule(job, 'repair', int(os.environ.get('REPAIR_SECONDS', '14400')), at)
+        schedule(job, 'repair', int(policy.get('repairMinutes',int(os.environ.get('REPAIR_SECONDS','14400'))//60))*60, at)
     elif action == 'return':
         if job['status'] not in {'open', 'in_progress'} or job['assignmentStatus'] not in {'awaiting_acceptance', 'accepted'}:
             raise RuleError('Assignment cannot be returned', 409)
@@ -101,7 +109,7 @@ def transition(original, user, data, at=None):
             raise RuleError('Start the assigned repair before submitting', 409)
         job.update(status='awaiting_verification', blocked=False)
         job['attachments'].extend(data.get('attachments', []))
-        schedule(job, 'verification', int(os.environ.get('VERIFY_SECONDS', '7200')), at)
+        schedule(job, 'verification', int(policy.get('verifyMinutes',int(os.environ.get('VERIFY_SECONDS','7200'))//60))*60, at)
     elif action == 'verify':
         if job['status'] != 'awaiting_verification':
             raise RuleError('Repair is not awaiting verification', 409)
@@ -112,7 +120,7 @@ def transition(original, user, data, at=None):
         if job['status'] != 'awaiting_verification':
             raise RuleError('Repair is not awaiting verification', 409)
         job['status'] = 'in_progress'
-        schedule(job, 'repair', int(os.environ.get('REPAIR_SECONDS', '14400')), at)
+        schedule(job, 'repair', int(policy.get('repairMinutes',int(os.environ.get('REPAIR_SECONDS','14400'))//60))*60, at)
     elif action == 'clarify':
         if job['status'] not in {'pending_review', 'needs_details'}:
             raise RuleError('Only pending reports can request clarification', 409)
@@ -134,6 +142,10 @@ def transition(original, user, data, at=None):
             raise RuleError('Only a new report or returned assignment can be confirmed already resolved', 409)
         job['status'] = 'closed'
         job['closedAt'] = at
+        clear_deadline(job)
+    elif action == 'skip':
+        if not job.get('planId') or job['status'] not in {'pending_review','open'}:raise RuleError('Only unstarted planned work can be skipped',409)
+        job['status']='skipped'
         clear_deadline(job)
     elif action == 'keep_separate':
         if not job.get('possibleDuplicate'):

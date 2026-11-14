@@ -2,7 +2,8 @@
 import shutil,zipfile
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-shutil.copytree(root/'dist',root/'backend/staticfiles',dirs_exist_ok=True)
+shutil.rmtree(root/'backend/staticfiles',ignore_errors=True)
+shutil.copytree(root/'dist',root/'backend/staticfiles')
 (root/'.deploy').mkdir(exist_ok=True)
 with zipfile.ZipFile(root/'.deploy/backend-latest.zip','w',zipfile.ZIP_DEFLATED) as z:
  for f in (root/'backend').rglob('*'):
