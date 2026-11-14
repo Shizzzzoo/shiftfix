@@ -571,6 +571,18 @@ function App() {
           </span>
         </header>
         <div className="content">
+          {me?.demoDataset && (
+            <section className="demo-disclosure" aria-label="Demo data notice">
+              <strong>Demo factory history</strong>
+              <span>
+                Fictional records from{" "}
+                {new Date(me.demoDataset.start).toLocaleDateString()} to{" "}
+                {new Date(me.demoDataset.end).toLocaleDateString()}. Demo people
+                have no login access. Demo schedules and automations start
+                paused.
+              </span>
+            </section>
+          )}
           {page === "Overview" && (
             <section className="factory-banner">
               <img
@@ -1039,7 +1051,9 @@ function App() {
                                   >
                                     <option value="">Select worker</option>
                                     {users
-                                      .filter((u) => u.role === "worker")
+                                      .filter(
+                                        (u) => u.role === "worker" && !u.demo,
+                                      )
                                       .map((u) => (
                                         <option value={u.id} key={u.id}>
                                           {u.name} · {u.role}

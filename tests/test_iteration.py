@@ -106,6 +106,7 @@ def test_manager_can_confirm_new_report_already_resolved():
 
 
 def test_handler_uses_current_authority_not_old_group_claim(monkeypatch):
+    monkeypatch.setattr(api.demo,'manifest',lambda:None)
     monkeypatch.setattr(api,'find_user',lambda id:{'Username':id})
     monkeypatch.setattr(api,'role_for',lambda u:'reporter')
     monkeypatch.setattr(api,'profile_for',lambda u:None)

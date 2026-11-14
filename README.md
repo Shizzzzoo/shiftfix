@@ -100,3 +100,5 @@ Final verification: 31 backend tests pass; production build and cfn-lint pass; l
 New: [four-role hierarchy, onboarding and accessibility](docs/hierarchy-and-onboarding.md). Backend suite now has 64 passing tests. Factory imagery credits: [image sources](docs/image-credits.md).
 
 The expanded maintenance workspace includes assets and location hierarchy, inventory and one-time purchase receiving, recurring maintenance, manual meter threshold automation, inspections, workload analytics and CSV tools. See [Operations guide](docs/operations-guide.md) for setup order, behavior and prototype boundaries.
+
+A clearly labeled fictional factory history now populates all data sections for the demo. See [Demo dataset and import notes](docs/demo-data.md).

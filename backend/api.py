@@ -8,7 +8,7 @@ from decimal import Decimal
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
-from . import storage, catalog
+from . import storage, catalog, demo
 from .domain import MACHINES, TERMINAL, RuleError, now, text, transition, visible, canonical_role, manages
 
 TYPES={'image/jpeg','image/png','image/webp'}
@@ -69,6 +69,7 @@ def signed(job,user=None):
 
 
 def find_user(id):
+    if isinstance(id,str) and id.startswith('demo-person-'):raise RuleError('Demo people are display-only and cannot sign in, receive assignments or have access roles changed',403)
     client=boto3.client('cognito-idp')
     pages=client.get_paginator('list_users').paginate(UserPoolId=os.environ['USER_POOL_ID'],Filter='sub = "'+text(id,'Worker ID',128)+'"')
     users=[u for p in pages for u in p['Users']]
@@ -99,7 +100,7 @@ def profile_for(user):
 
 def me(user):
     profile=profile_for(user)
-    return dict(user,role=canonical_role(user['role']),name=profile['displayName'] if profile else user['name'],onboardingComplete=bool(profile),profile=profile)
+    return dict(user,role=canonical_role(user['role']),name=profile['displayName'] if profile else user['name'],onboardingComplete=bool(profile),profile=profile,demoDataset=demo.manifest())
 
 
 def onboard(data,user):
@@ -193,7 +194,7 @@ def route(method,path,data,user,event):
                 a={v['Name']:v['Value'] for v in u['Attributes']}
                 profile=profile_for({'id':a['sub']})
                 items.append({'id':a['sub'],'email':a.get('email',''),'name':profile['displayName'] if profile else a.get('name') or a.get('email','User'),'role':role_for(u)})
-        return {'items':items}
+        return {'items':items+demo.people()}
     parts=path.strip('/').split('/')
     if len(parts)==3 and parts[0]=='users' and parts[2]=='role' and method=='POST':
         if not manages(user): raise RuleError('Manager access required',403)

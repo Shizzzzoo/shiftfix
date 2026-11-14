@@ -399,7 +399,11 @@ function Breakdown({
           <p>No matching records to chart.</p>
         </div>
       ) : (
-        <ul className="bar-chart">
+        <ul
+          className="bar-chart"
+          tabIndex={0}
+          aria-label={`${title} breakdown`}
+        >
           {data.map((d) => (
             <li key={d.name}>
               <div>

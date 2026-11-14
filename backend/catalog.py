@@ -116,7 +116,10 @@ def validate(kind,data,old=None):
         ids=out.get('memberIds',[])
         if not isinstance(ids,list) or len(ids)>50 or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids):raise RuleError('Choose at most 50 distinct users')
         from .api import find_user
-        for id in ids:find_user(id)
+        from . import demo
+        fictional={p['id'] for p in demo.people()}
+        for id in ids:
+            if id not in fictional:find_user(id)
         out['memberIds']=ids
     if kind=='parts':
         for f in ['quantity','minQuantity']:out[f]=integer(out.get(f,0),f)

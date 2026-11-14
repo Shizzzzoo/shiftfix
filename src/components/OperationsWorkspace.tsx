@@ -629,10 +629,10 @@ export function OperationsWorkspace({
           <h2>Upcoming maintenance</h2>
           <p>
             Enabled plans generate requests for manager review when due. The
-            scheduler checks hourly.
+            scheduler checks hourly. Paused plans are shown for planning only.
           </p>
           {(catalog.plans || [])
-            .filter((x) => !x.archived && x.enabled)
+            .filter((x) => !x.archived)
             .sort((a, b) => a.nextRun.localeCompare(b.nextRun))
             .map((p) => (
               <div className="upcoming-row" key={p.id}>
@@ -641,7 +641,7 @@ export function OperationsWorkspace({
                   <strong>{p.name}</strong>
                   <small>
                     {machines.find((m) => m.id === p.assetId)?.name} · every{" "}
-                    {p.intervalDays} days
+                    {p.intervalDays} days · {p.enabled ? "Enabled" : "Paused"}
                   </small>
                 </div>
                 <time dateTime={p.nextRun}>
@@ -649,7 +649,7 @@ export function OperationsWorkspace({
                 </time>
               </div>
             ))}
-          {!(catalog.plans || []).some((p) => p.enabled && !p.archived) && (
+          {!(catalog.plans || []).some((p) => !p.archived) && (
             <div className="module-empty">
               <Clock size={30} />
               <h3>No scheduled maintenance.</h3>
@@ -993,7 +993,13 @@ export function OperationsWorkspace({
                 <small>{u.email}</small>
               </div>
               <span className="badge status">{u.role}</span>
-              {u.role !== "admin" &&
+              {u.demo && (
+                <small className="demo-person-note">
+                  Demo person · no login or access permissions
+                </small>
+              )}
+              {!u.demo &&
+                u.role !== "admin" &&
                 (me.role === "admin" || u.role !== "manager") && (
                   <label className="role-select">
                     <span className="sr-only">Role for {u.name}</span>
