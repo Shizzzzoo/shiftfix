@@ -1,0 +1,10 @@
+{
+  "mode": "local fixture only",
+  "requested": [
+    "demo-832def1b-7945-5a27-aba3-c35604e28232",
+    "demo-d0d9c7ae-f2c4-5ce2-b07d-d561adb9b52b"
+  ],
+  "lastRequested": "Unusual bearing vibration",
+  "displayed": "Conveyor belt tracking drift",
+  "staleDetailWon": true
+}

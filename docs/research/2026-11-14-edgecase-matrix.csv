@@ -1,0 +1,101 @@
+id,area,scenario,acceptance_contract,priority,evidence_status,evidence
+EC-001,Access,Guess another user’s work-order ID,"Deny detail, action, evidence and export access at the API",P0,Existing authorization; extend matrix,backend/domain.py visible; backend/api.py route
+EC-002,Access,Reporter calls manager catalog mutation directly,403 and no data/audit mutation,P0,Existing tests,tests/test_catalog.py test_scoped_bootstrap_and_mutation_matrix
+EC-003,Access,Worker updates a job assigned to someone else,403; viewing a report does not grant repair authority,P0,Existing source; extend tests,backend/domain.py transition
+EC-004,Access,Role revoked after page load,Next mutation/export/upload authorization uses current role,P0,Existing tests/source,tests/test_iteration.py test_handler_uses_current_authority_not_old_group_claim
+EC-005,Access,Account disabled while an old page remains open,Reject further authenticated operations and preserve unsent draft,P0,Backend check exists; UX proposed,backend/api.py find_user
+EC-006,Access,Manager tries to promote someone to Admin or edit an Admin,Deny; no partial group change,P0,Existing source; failure injection needed,backend/api.py set_role
+EC-007,Access,Cognito group update fails halfway through a role change,"Fail closed, expose recoverable access state, audit outcome",P1,Proposed,backend/api.py set_role uses multiple external calls
+EC-008,Access,"Demo person used as login, assignee or role target",Deny; metadata roster is never an identity provider,P0,Existing tests,tests/test_demo.py test_demo_people_never_authenticate_or_receive_roles
+EC-009,Access,User switches account with cached work/drafts,Clear private cache and keep pending drafts isolated by user,P0,Proposed,No persistent draft/cache policy yet
+EC-010,Access,Location selector is treated as a tenant boundary,Keep single-factory claim; future sites require scoped server authorization,P0,Explicit product boundary,docs/operations-guide.md
+EC-011,Work orders,Lost create response followed by photo reupload retry,Resolve original command; no duplicate job or conflicting replacement payload,P1,Reproduced gap R09,scripts/research-edgecase-probes.py
+EC-012,Work orders,Two same-fault reports while the GSI lags,Use strong same-asset lookup; flag for human review without auto-merging,P1,Reproduced gap R04,scripts/research-edgecase-probes.py
+EC-013,Work orders,Two distinct faults on the same machine,Allow separate jobs with an explicit reason and distinct provenance,P1,Existing tests/source,tests/test_backend.py test_separate_fault_not_auto_merged
+EC-014,Work orders,Supervisor marks report already handled,Record reason and link the actual prior repair; preserve recurrence option,P1,Partial; explicit repair link proposed,backend/domain.py resolve_existing
+EC-015,Work orders,Assigned person is not responsible or unavailable,"Return with reason, clear acceptance, route to manager and audit new assignment",P0,Existing workflow; workload/skills missing,backend/domain.py return and reassign
+EC-016,Work orders,Old worker accepts after reassignment,Reject stale version/ownership; no second active owner,P0,Existing source; role browser test needed,backend/domain.py transition
+EC-017,Work orders,Two managers verify/rework/merge concurrently,Exactly one versioned transition; no contradictory activity,P0,Existing version transaction,backend/storage.py write
+EC-018,Work orders,Same fault returns after a verified repair,Create linked new recurrence; never silently reopen or discard old evidence,P1,Partial existing advisory,backend/api.py create
+EC-019,Work orders,Bulk archive fails after several successes,Report exact committed subset; retry remaining records and support restore,P1,Existing UI; injected network test needed,src/components/OperationsWorkspace.tsx Bulk archive
+EC-020,Work orders,Unresolved job is archived by direct API call,Reject; only terminal work can be archived/restored,P0,Existing tests,tests/test_catalog.py test_planned_skip_and_terminal_archive
+EC-021,Evidence,User selects a500MiB image,Reject before signing or uploading any bytes,P0,Existing fixture checks,docs/verification.md
+EC-022,Evidence,MIME and extension claim JPEG but bytes differ,"Use server validation, ignore filename as trust evidence",P1,Partial existing checks,backend/api.py file_metadata
+EC-023,Evidence,Empty file or sixth file,Reject whole batch before signing; preserve useful form text,P1,Existing validation,src/uploads.ts; backend/api.py uploads
+EC-024,Evidence,File contains a valid PNG signature but is undecodable,Reject through actual bounded decode/verification,P1,Reproduced gap R01,scripts/research-edgecase-probes.py
+EC-025,Evidence,Small compressed image expands into huge pixel buffer,"Enforce pixel, decoded-memory and decode-time limits",P1,Proposed,OWASP File Upload Cheat Sheet
+EC-026,Evidence,Signed upload expires after an interrupted transfer,Renew only unfinished uploads under the same logical report command,P1,Proposed,Photo response-loss probe R09
+EC-027,Evidence,Object is replaced after a supervisor reviewed it,Commit and retrieve immutable version/checksum; never substitute latest bytes,P1,Reproduced gap R02,scripts/research-edgecase-probes.py
+EC-028,Evidence,Repeated rework submissions accumulate attachments,Enforce a cumulative count/byte budget and retain prior provenance,P1,Per-update bounds only,backend/domain.py submit
+EC-029,Evidence,Foreign upload key or stale signed download is reused,Deny foreign commits; document bounded lifetime of previously issued downloads,P0,Existing key guard; expiry contract proposed,backend/api.py file_metadata and signed
+EC-030,Evidence,User cancels after uploading or leaves temporary objects,Clean uncommitted uploads after a grace period without deleting committed evidence,P2,Proposed,No evidence reference cleanup job documented
+EC-031,Inventory,Two jobs issue the last spare concurrently,One transaction succeeds; stock and available balance stay nonnegative,P0,Base adjustment protected; job ledger proposed,backend/catalog.py adjust
+EC-032,Inventory,Issue amount exceeds stock,Reject with available quantity and no movement/audit side effect,P0,Existing tests,tests/test_catalog.py test_stock_adjustment_prevents_negative_and_stale
+EC-033,Inventory,Worker issues parts for another worker’s job,Require current job authority plus permitted store scope,P0,Proposed job-linked issue,No work-order-linked stock API yet
+EC-034,Inventory,Issue command is retried after response loss,Same operation ID returns same movement; stock decremented once,P0,Proposed,Version checks alone do not identify the logical issue
+EC-035,Inventory,Return more than was issued to a job,Reject; bounded reversal references original movement,P0,Proposed,No job-linked return ledger yet
+EC-036,Inventory,Duplicate SKU with case/whitespace changes,One normalized SKU per chosen store/catalog contract,P1,Reproduced gap R06,scripts/research-edgecase-probes.py
+EC-037,Inventory,Unit changes from pieces to litres after movements,Block or execute explicit audited conversion with historical unit snapshots,P1,Reproduced gap R06,scripts/research-edgecase-probes.py
+EC-038,Inventory,Stock count and issue happen together,Versioned count snapshot; report discrepancy without erasing intervening movement,P1,Proposed,No cycle-count workflow yet
+EC-039,Inventory,Location/part archived while referenced by active work,Preserve history; prevent new use and reject conflicting archive,P0,Existing catalog guard; allocation edge proposed,backend/catalog.py archive
+EC-040,Inventory,Reservation exceeds available balance,available=onHand-reserved; no implicit negative reservation or consumption,P0,Proposed,MaintainX part availability documentation
+EC-041,Purchasing,Same purchase is received twice,One stock increment and one receipt ledger entry,P0,Existing tests/live check,tests/test_catalog.py test_receiving_is_atomic_and_once
+EC-042,Purchasing,Received amount exceeds remaining ordered quantity,Reject overreceipt or require explicit authorized policy,P0,Proposed partial receipts,Current receive is full order once
+EC-043,Purchasing,Supplier delivers only part of order,Track ordered/received/remaining explicitly; do not pretend full receipt,P1,Proposed,Current API has no partial quantity parameter
+EC-044,Purchasing,Receipt and job issue race on same stock,Atomic version check; reject stale operation and reconcile availability,P0,Base stock guards; extended ledger proposed,backend/catalog.py receive and adjust
+EC-045,Purchasing,Received purchase is edited retrospectively,Keep immutable receipt; add audited correction/reversal instead,P0,Existing restriction,backend/catalog.py mutate
+EC-046,Purchasing,Different currencies appear in one cost total,Keep per-currency totals or an explicit exchange snapshot; no silent sum,P1,Proposed,Purchases support INR/USD/EUR; no job-cost ledger
+EC-047,Purchasing,Fractional cost introduces rounding errors,Use decimal/minor units and a published rounding rule,P1,Decimal input exists; total contract needed,backend/catalog.py number and purchases
+EC-048,Purchasing,Archived vendor or part referenced by a new order,Reject at commit; concurrent archive cannot win alongside dependent creation,P0,Existing tested revision guard,tests/test_catalog.py archive race cases
+EC-049,Purchasing,PO creation repeated after a timeout,"One logical PO, with durable request identity",P1,Same create-pattern gap R05,backend/catalog.py mutate
+EC-050,Purchasing,Parts arrival should unblock a repair,Expose parts-ready state to manager; do not auto-complete the repair,P1,Proposed,No PO-to-blocked-job link yet
+EC-051,Inspections,Answers are reordered or inject unrecognized questions,Reject unless exact template/version snapshot matches,P0,Existing tests,tests/test_catalog.py test_inspection_exact_questions_and_worker_permission
+EC-052,Inspections,Fail selected without explanation on a critical question,Require configured observation/evidence and preserve partial draft,P1,Proposed,Notes currently optional
+EC-053,Inspections,Not applicable used to bypass required safety task,Require explicit applicability/reason; do not claim safety authorization,P1,Proposed,Checklist semantics need factory-owned policy
+EC-054,Inspections,Template edited after responses exist,Immutable response stores executed question/version snapshot,P1,Question text exists; version proposed,backend/catalog.py inspection_responses
+EC-055,Inspections,Archived response restored after its template changed,Restore original historical snapshot without revalidating against new questions,P1,Reproduced gap R07,scripts/research-edgecase-probes.py
+EC-056,Inspections,Same failed response submitted/retried twice,One immutable response and one chosen corrective request,P1,Proposed; generic-create gap R05,No response create idempotency
+EC-057,Inspections,Two supervisors create follow-up for same failed response,Transaction creates one linked review request; second sees existing link,P0,Proposed,No inspection follow-up action yet
+EC-058,Inspections,Asset archived while inspection/follow-up commits,Reject one operation through shared reference/version guard,P0,Existing inspection guard; follow-up extension proposed,backend/catalog.py revision_guard
+EC-059,Inspections,Fail is mistaken for completed maintenance,Keep failure visible until authorized verification closes corrective work,P0,Proposed connection,Existing response creation does not create follow-up
+EC-060,Inspections,Failed inspection matches an already active incident,Offer link/merge or separate reason; never discard failure evidence,P1,Proposed,MaintainX corrective action documentation
+EC-061,Meters,Exact same reading command is delivered twice,One immutable reading and one linked result,P0,Existing tests,tests/test_catalog.py test_meter_threshold_workorder_atomic_idempotency
+EC-062,Meters,Many different high readings describe one ongoing fault,Record readings; maintain one unresolved incident per configured rule/asset,P1,Reproduced gap R03,scripts/research-edgecase-probes.py
+EC-063,Meters,Reading oscillates around threshold,Define rearm/hysteresis or cooldown; show why trigger suppressed,P1,Proposed,MaintainX automation/condition docs
+EC-064,Meters,Negative value submitted for cumulative counter,Validate meter type; temperature can be negative while run-hours cannot,P1,Proposed typed meters,Current meters are finite numeric values with unit text
+EC-065,Meters,An older reading arrives after a newer one,Preserve observedAt and receivedAt; do not roll latest state backward,P1,Proposed,Current manual input stamps server arrival only
+EC-066,Meters,Counter reset/replacement/rollover,Record explicit reset epoch; never treat ordinary lower reading as automatic reset,P1,Proposed,IBM/Fiix meter documentation
+EC-067,Meters,Meter unit or thresholds change with history,Preserve version and unit semantics for old readings and incidents,P1,Proposed,Current meter history stores value without unit snapshot
+EC-068,Meters,NaN/infinity/blank/non-number input,Reject before persistence or trigger evaluation,P0,Existing finite numeric validation,backend/catalog.py number
+EC-069,Meters,Two rules act on same reading,Define per-rule outcomes and one incident key contract; no accidental fanout,P1,Proposed,Current matching rules collapse to a boolean trigger
+EC-070,Meters,Rule disabled or meter archived mid-flight,Commit must honor latest configuration/version; retain rejected/skipped reason,P0,Shared catalog guard exists; test full race,backend/catalog.py readings/revision_guard
+EC-071,Preventive maintenance,Scheduler retries same occurrence,One request and one nextRun advancement atomically,P0,Existing tests,tests/test_catalog.py test_hourly_plan_occurrence_once_and_next_future
+EC-072,Preventive maintenance,Plan is edited while due request is generated,Version-guard outcome and immutable occurrence provenance,P0,Existing race tests,backend/planning.py
+EC-073,Preventive maintenance,Scheduler catches up after several missed intervals,Expose chosen coalescing policy and missed-count metadata,P1,Coalescing exists; metadata proposed,backend/planning.py steps
+EC-074,Preventive maintenance,20 oldest plans are permanently invalid,Quarantine/back off poison plans so newer valid due plans run,P1,Fault-injection result R08,scripts/research-edgecase-probes.py
+EC-075,Preventive maintenance,Monthly31st/leap day/DST calendar boundary,Explicit clamp/skip/timezone contract before offering calendar cadence,P1,Future feature acceptance,Current scheduler supports elapsed N-day intervals only
+EC-076,Preventive maintenance,7 days after completion confused with every7 days,Select fixed generation anchor or verified-completion anchor explicitly,P1,Proposed cadence modes,MaintainX and Fiix differ in floating terminology
+EC-077,Preventive maintenance,Plan paused then resumed after missed dates,Choose next future occurrence or bounded catch-up; never silent backlog explosion,P1,Current coalescing; explicit UX needed,backend/planning.py
+EC-078,Preventive maintenance,Plan/asset archived during generation,No request referencing an archived active parent may commit,P0,Existing catalog guard/reread,backend/planning.py
+EC-079,Preventive maintenance,Hourly invocation fails despite schedule showing enabled,Operational failure visible with retry and operator recovery path,P1,Retries/DLQ exist; health UI/alarms missing,Completed live stack
+EC-080,Preventive maintenance,Time and usage become due together,One canonical occurrence according to chosen time-or-usage policy,P1,Future feature acceptance,No combined usage PM yet
+EC-081,Browser and recovery,Session expires with a filled report or evidence upload,Preserve draft and guide reauthentication without duplicate command,P1,Code-inspected gap,src/main.tsx api and Login
+EC-082,Browser and recovery,Network drops while entering a report,Persistent user-scoped draft labeled unsent; manual retry supported,P1,Proposed,MDN IndexedDB/background sync docs
+EC-083,Browser and recovery,API returns429/503 during page refresh or save,Bounded jittered retry for safe reads; durable operation IDs for writes,P1,No retry contract in current API wrapper,src/main.tsx api
+EC-084,Browser and recovery,DetailA request returns after later detailB,Latest requested selection wins; cancel/ignore stale response,P1,Local UI probe,scripts/research-ui-race.mjs
+EC-085,Browser and recovery,Third image upload fails after first two succeed,Resume unfinished files; stable attachment identity and commit state,P1,Code-inspected gap related R09,src/main.tsx upload/Report.submit
+EC-086,Browser and recovery,Browser refresh or QR opens an asset URL,Restore explicit deep link/filter context after authenticated entry,P2,Proposed,Navigation currently held in React state
+EC-087,Browser and recovery,"CSV contains formula, quoted newline or too many rows","Escape exports, parse quoted cells, preview bounded import and partial result",P1,Existing checks; expand errors,src/csv.ts; scripts/verify-operations.mjs
+EC-088,Browser and recovery,Thousands of rows exceed response or render budget,"Cursor pagination, scoped queries and bounded export without omitted records",P1,Unbounded list/catalog behavior confirmed by code,backend/storage.py list_jobs; catalog bootstrap
+EC-089,Browser and recovery,Keyboard-only user scrolls charts and edits dialogs,"Focusable scroll regions, visible focus, escape and return-focus behavior",P1,Existing fixture checks; manual keyboard pass needed,scripts/verify-demo.mjs
+EC-090,Browser and recovery,Loading/success/conflict status changes dynamically,Announce status/errors accessibly; never erase actionable refresh failure,P1,Partial existing announcements,W3C SC4.1.3; OperationsWorkspace mutate
+EC-091,Reporting and operations,Demo rows contribute to claimed production KPI,Explicit demo-only/real-only/all scope and export disclosure,P1,Banner exists; KPI scope switch missing,backend/demo.py; OperationsDashboard
+EC-092,Reporting and operations,Archiving a completed job changes historical completion totals,Define operational backlog versus retained historical reporting scope,P1,Current dashboard excludes archive,OperationsDashboard jobs filter
+EC-093,Reporting and operations,Created-date filter mistaken for completion-date throughput,Label metric date semantics; offer the appropriate time basis,P1,Current filter uses createdAt,OperationsDashboard jobs filter
+EC-094,Reporting and operations,MTTR/MTBF have no actual outage/runtime input,Show unavailable; never infer from request age or synthetic closed times,P1,Proposed metric contract,IBM MTTR/MTBF definitions
+EC-095,Reporting and operations,Two jobs overlap on one asset outage or two workers log time,Union outage intervals; sum person-hours separately,P1,Proposed,No downtime/labor ledger yet
+EC-096,Reporting and operations,Notification delivery is repeated or delayed,"One event identity, explicit read state and retry-visible delivery history",P1,Proposed,Current deadline flow records activity only
+EC-097,Reporting and operations,Dead-letter message or failed workflow is ignored,"Show failure age/count and authorized, idempotent replay after diagnosis",P1,DLQ exists; operator workflow missing,Completed stack; backend/deadlines.py
+EC-098,Reporting and operations,Health page equates enabled scheduler with successful work,"Distinguish configuration, last attempt, last success and pending backlog",P1,Proposed,Live runtime read confirms configured schedule only
+EC-099,Reporting and operations,First cold request plus low account limits causes timeout,Measure real p95/error behavior with bounded load; preserve request identity,P1,Not load-tested,AWS Lambda quotas; live stage5rps/burst10
+EC-100,Reporting and operations,Restore backup revives stale timers or partial projections,"Reconcile authoritative jobs, outbox and references; rehearse in isolated environment",P2,Proposed recovery exercise,DynamoDB transaction/stream propagation docs

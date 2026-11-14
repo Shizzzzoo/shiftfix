@@ -102,3 +102,5 @@ New: [four-role hierarchy, onboarding and accessibility](docs/hierarchy-and-onbo
 The expanded maintenance workspace includes assets and location hierarchy, inventory and one-time purchase receiving, recurring maintenance, manual meter threshold automation, inspections, workload analytics and CSV tools. See [Operations guide](docs/operations-guide.md) for setup order, behavior and prototype boundaries.
 
 A clearly labeled fictional factory history now populates all data sections for the demo. See [Demo dataset and import notes](docs/demo-data.md).
+
+Final-day planning: [primary-source research, code audit, 100-case acceptance matrix and prioritized build plan](docs/research/README.md).

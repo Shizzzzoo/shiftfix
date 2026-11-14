@@ -1,0 +1,252 @@
+{
+  "mode": "isolated moto only; no live mutations",
+  "observations": [
+    {
+      "id": "R01",
+      "finding": "Image header spoof accepted",
+      "metadataAccepted": true,
+      "imageDecoderAccepted": false
+    },
+    {
+      "id": "R02",
+      "finding": "Evidence not pinned to reviewed S3 version",
+      "committedMetadata": {
+        "key": "uploads/reporter/replay",
+        "name": "evidence.png",
+        "type": "image/png",
+        "size": 69,
+        "stage": "before"
+      },
+      "reviewedHash": "b1ff9c8ea3a780bad09b346c423d2d0e46815926879b18e841d928376a946640",
+      "servedLatestHash": "fce481932ea5d07a91c7991c09fdadb4bf78f9b4cc8f927188384231f9d12679"
+    },
+    {
+      "id": "R03",
+      "finding": "Distinct high readings create repeated active requests",
+      "readingCount": 3,
+      "distinctWorkOrders": 3,
+      "duplicateFlags": [
+        false,
+        true,
+        true
+      ]
+    },
+    {
+      "id": "R04",
+      "finding": "Duplicate advisory misses a lagged GSI",
+      "firstExists": true,
+      "secondPossibleDuplicate": false,
+      "actualWorkOrders": 2
+    },
+    {
+      "id": "R05",
+      "finding": "Catalog create has no logical request idempotency",
+      "samePayload": true,
+      "differentIds": true,
+      "vendorCount": 2
+    },
+    {
+      "id": "R06",
+      "finding": "Part unit can change after stock history; duplicate SKU allowed",
+      "updatedUnit": "litres",
+      "balance": 2,
+      "sameSkuRecords": 2
+    },
+    {
+      "id": "R07",
+      "finding": "Historical inspection restore depends on current template questions",
+      "restoreResult": {
+        "status": 400,
+        "message": "Checklist answers must match the template in order"
+      }
+    },
+    {
+      "id": "R08",
+      "finding": "Poison-plan starvation under injected corrupted legacy references",
+      "faultInjection": true,
+      "first": {
+        "processed": [],
+        "skipped": [
+          {
+            "planId": "c3cd801f-ad66-445b-8964-76e36edd7716",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "c3135ba4-2f83-49b8-a383-e4875339cf03",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "727be8c6-7500-4d42-914b-70f9558afa8f",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "376e776c-ab17-4596-bafd-2c90c5269576",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "9334df83-3c41-46b8-8e9e-85cfb79aeb91",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "ea52f3de-5923-4c29-b279-f939ee64d1f2",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "d3da4124-ed68-4070-8c28-4666f0eb9c1c",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "d33354c6-30d3-44c0-a15e-65608ef1f156",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "56d89e86-50f5-4645-a690-b0e4386c8572",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "cdf16b62-8304-492b-a345-06b2c100b648",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "680501a1-13d8-4fa2-af79-81dd22f1dffc",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "b319fe20-57da-4435-b246-bd1918a0c9ff",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "53a19992-9dd4-4888-afff-33883fad5b20",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "00c183fb-b579-4668-b2ff-062a6dfd0d39",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "772678ba-ac41-4367-964e-6fe177a6c0db",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "6f044c71-a747-4aaf-bfa4-e008ea06b1d8",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "c83deb60-27df-40f2-abdb-20b3222759e7",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "200d0b8f-dc5c-4c22-95ac-9e167235cea0",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "645a5007-9427-48d5-8af8-6867781ca41e",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "29baff01-9e11-4a3e-b6c9-9cfed6518fab",
+            "reason": "assets reference not found or archived"
+          }
+        ]
+      },
+      "second": {
+        "processed": [],
+        "skipped": [
+          {
+            "planId": "c3cd801f-ad66-445b-8964-76e36edd7716",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "c3135ba4-2f83-49b8-a383-e4875339cf03",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "727be8c6-7500-4d42-914b-70f9558afa8f",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "376e776c-ab17-4596-bafd-2c90c5269576",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "9334df83-3c41-46b8-8e9e-85cfb79aeb91",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "ea52f3de-5923-4c29-b279-f939ee64d1f2",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "d3da4124-ed68-4070-8c28-4666f0eb9c1c",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "d33354c6-30d3-44c0-a15e-65608ef1f156",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "56d89e86-50f5-4645-a690-b0e4386c8572",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "cdf16b62-8304-492b-a345-06b2c100b648",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "680501a1-13d8-4fa2-af79-81dd22f1dffc",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "b319fe20-57da-4435-b246-bd1918a0c9ff",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "53a19992-9dd4-4888-afff-33883fad5b20",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "00c183fb-b579-4668-b2ff-062a6dfd0d39",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "772678ba-ac41-4367-964e-6fe177a6c0db",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "6f044c71-a747-4aaf-bfa4-e008ea06b1d8",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "c83deb60-27df-40f2-abdb-20b3222759e7",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "200d0b8f-dc5c-4c22-95ac-9e167235cea0",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "645a5007-9427-48d5-8af8-6867781ca41e",
+            "reason": "assets reference not found or archived"
+          },
+          {
+            "planId": "29baff01-9e11-4a3e-b6c9-9cfed6518fab",
+            "reason": "assets reference not found or archived"
+          }
+        ]
+      },
+      "validPlanId": "a0f9d726-10f1-48dc-870c-2045f594ab89",
+      "validPlanWorkCreated": false
+    },
+    {
+      "id": "R09",
+      "finding": "Photo reupload changes report payload on response-loss retry",
+      "firstCommitted": true,
+      "sameImageBytes": true,
+      "retryResult": {
+        "status": 409,
+        "message": "Idempotency key already used for a different report"
+      },
+      "workOrders": 1
+    }
+  ]
+}
