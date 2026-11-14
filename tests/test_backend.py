@@ -64,7 +64,7 @@ def test_upload_rejects_foreign_prefix(aws):
 def test_auth_rejects_unverified_and_reads_group(aws):
     claims={'sub':'s','email_verified':'true','cognito:groups':'[supervisor]'}
     event={'requestContext':{'authorizer':{'jwt':{'claims':claims}}}}
-    assert api.user_from(event)['role']=='supervisor'
+    assert api.user_from(event)['role']=='manager'
     claims['email_verified']='false'
     with pytest.raises(RuleError): api.user_from(event)
 

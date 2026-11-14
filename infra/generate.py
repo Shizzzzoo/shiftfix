@@ -24,7 +24,7 @@ def fn(n,handler,rol,env):
 fn('Auth','backend.auth.post_confirmation','AuthRole',{'SUPERVISOR_EMAIL':ref('SupervisorEmail')})
 add('UserPool','AWS::Cognito::UserPool',{'UserPoolName':sub('${AWS::StackName}-users'),'UsernameAttributes':['email'],'AutoVerifiedAttributes':['email'],'Policies':{'PasswordPolicy':{'MinimumLength':12,'RequireLowercase':True,'RequireUppercase':True,'RequireNumbers':True,'RequireSymbols':True}},'Schema':[{'Name':'email','Required':True,'Mutable':True},{'Name':'name','Required':True,'Mutable':True}],'LambdaConfig':{'PostConfirmation':arn('Auth')}} ,True)
 add('AuthPermission','AWS::Lambda::Permission',{'Action':'lambda:InvokeFunction','FunctionName':ref('Auth'),'Principal':'cognito-idp.amazonaws.com','SourceArn':arn('UserPool'),'SourceAccount':ref('AWS::AccountId')})
-for name in ['supervisor','technician','operator']:add(name+'Group','AWS::Cognito::UserPoolGroup',{'GroupName':name,'UserPoolId':ref('UserPool')})
+for name in ['supervisor','technician','operator','admin','manager','worker','reporter']:add(name+'Group','AWS::Cognito::UserPoolGroup',{'GroupName':name,'UserPoolId':ref('UserPool')})
 add('Client','AWS::Cognito::UserPoolClient',{'UserPoolId':ref('UserPool'),'GenerateSecret':False,'ExplicitAuthFlows':['ALLOW_USER_PASSWORD_AUTH','ALLOW_REFRESH_TOKEN_AUTH'],'PreventUserExistenceErrors':'ENABLED','AccessTokenValidity':1,'IdTokenValidity':1,'RefreshTokenValidity':7,'SupportedIdentityProviders':['COGNITO']})
 env={'TABLE_NAME':ref('Table'),'ASSETS_BUCKET':ref('Assets'),'USER_POOL_ID':ref('UserPool'),'SUPERVISOR_EMAIL':ref('SupervisorEmail'),'ACK_SECONDS':'3600','REPAIR_SECONDS':'14400','VERIFY_SECONDS':'7200'}
 fn('Api','backend.api.handler','ApiRole',env)

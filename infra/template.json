@@ -612,6 +612,66 @@
         }
       }
     },
+    "adminGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "admin",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "managerGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "manager",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "workerGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "worker",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "reporterGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "reporter",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
     "Client": {
       "Type": "AWS::Cognito::UserPoolClient",
       "Properties": {

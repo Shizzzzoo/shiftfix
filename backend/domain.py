@@ -41,8 +41,14 @@ def clear_deadline(job):
     job['overdue'] = False
 
 
+def canonical_role(role):
+    return {'supervisor': 'manager', 'technician': 'worker', 'operator': 'reporter'}.get(role, role if role in {'admin', 'manager', 'worker', 'reporter'} else 'reporter')
+
+def manages(user):
+    return canonical_role(user['role']) in {'admin', 'manager'}
+
 def visible(job, user):
-    return user['role'] == 'supervisor' or job['reporterId'] == user['id'] or job.get('assigneeId') == user['id']
+    return manages(user) or job['reporterId'] == user['id'] or job.get('assigneeId') == user['id']
 
 
 def transition(original, user, data, at=None):
@@ -50,14 +56,14 @@ def transition(original, user, data, at=None):
     action = data.get('action')
     if data.get('version') != original['version']:
         raise RuleError('This work order changed. Refresh before acting.', 409)
-    supervisor = user['role'] == 'supervisor'
-    owner = user['role'] == 'technician' and user['id'] == original.get('assigneeId')
+    supervisor = manages(user)
+    owner = canonical_role(user['role']) == 'worker' and user['id'] == original.get('assigneeId')
     if not visible(original, user):
         raise RuleError('You cannot access this work order', 403)
     if action in {'approve', 'reassign', 'clarify', 'reject', 'merge', 'verify', 'rework', 'keep_separate', 'resolve_existing'} and not supervisor:
-        raise RuleError('Supervisor access required', 403)
+        raise RuleError('Manager access required', 403)
     if action in {'accept', 'return', 'start', 'block', 'submit'} and not owner:
-        raise RuleError('Only the currently assigned technician can do that', 403)
+        raise RuleError('Only the currently assigned worker can do that', 403)
     if original['status'] in TERMINAL:
         raise RuleError('This work order is already closed, rejected or merged', 409)
     reason = data.get('reason', '')
@@ -72,8 +78,8 @@ def transition(original, user, data, at=None):
         if action == 'reassign' and job['status'] not in {'open', 'in_progress'}:
             raise RuleError('This work order cannot be reassigned yet', 409)
         job.update(status='open', assignmentStatus='awaiting_acceptance',
-                   assigneeId=text(data.get('assigneeId'), 'Technician', 128),
-                   assigneeName=text(data.get('assigneeName', data.get('assigneeId')), 'Technician name', 200), blocked=False)
+                   assigneeId=text(data.get('assigneeId'), 'Worker', 128),
+                   assigneeName=text(data.get('assigneeName', data.get('assigneeId')), 'Worker name', 200), blocked=False)
         schedule(job, 'acknowledgment', int(os.environ.get('ACK_SECONDS', '3600')), at)
     elif action in {'accept', 'start'}:
         if job['status'] != 'open' or job['assignmentStatus'] != 'awaiting_acceptance':
@@ -124,8 +130,8 @@ def transition(original, user, data, at=None):
         job.update(status='merged', mergedInto=text(data.get('targetId'), 'Target work order', 128))
         clear_deadline(job)
     elif action == 'resolve_existing':
-        if job['status'] != 'open' or job['assignmentStatus'] != 'returned':
-            raise RuleError('Only a returned assignment can be confirmed already resolved', 409)
+        if job['status'] not in {'pending_review', 'needs_details'} and not (job['status'] == 'open' and job['assignmentStatus'] == 'returned'):
+            raise RuleError('Only a new report or returned assignment can be confirmed already resolved', 409)
         job['status'] = 'closed'
         job['closedAt'] = at
         clear_deadline(job)

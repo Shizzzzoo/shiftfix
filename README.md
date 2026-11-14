@@ -1,17 +1,17 @@
 # ShiftFix
 
-A serverless factory-maintenance prototype: from a machine-fault photo to an owned task, an auditable decision, and a supervisor-verified repair.
+A serverless factory-maintenance prototype: from a machine-fault photo to an owned task, an auditable decision, and a manager-verified repair.
 
 ## What it does
 
-- Operators report faults on a small Plant 01 machine registry with descriptions, priority, categories and optional private photo evidence.
-- Supervisors approve and assign requests, ask for details, reject with a reason, merge duplicate reports, or explicitly keep similar reports separate.
-- Technicians accept their current assignments, mark a repair blocked, return an incorrect assignment with a reason, and submit repair notes/photos.
-- Supervisors accept a completed repair or send it back for rework. A returned assignment claimed to be already repaired can be closed only by a supervisor with a recorded explanation.
+- Reporters report faults on a small Plant 01 machine registry with descriptions, priority, categories and optional private photo evidence.
+- Managers approve and assign requests, ask for details, reject with a reason, merge duplicate reports, or explicitly keep similar reports separate.
+- Workers accept their current assignments, mark a repair blocked, return an incorrect assignment with a reason, and submit repair notes/photos.
+- Managers accept a completed repair or send it back for rework. A returned assignment claimed to be already repaired can be closed only by a manager with a recorded explanation.
 - Reporters can resubmit a request after clarification. Closed/rejected work can have linked follow-up reports.
 - A timeline preserves who did what and why. Merged reports retain their original authors and evidence.
 - Step Functions waits for versioned deadlines, then rechecks current state before flagging an overdue job. Reassignment, closure, and deadline changes make old timers harmless.
-- Supervisors can promote verified users to technicians from Overview → Team access.
+- Managers can promote verified users to workers from Overview → Team access.
 
 ## Architecture
 
@@ -37,12 +37,12 @@ The account initially blocked CloudFront creation pending AWS account verificati
 ## First use
 
 1. Open https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com .
-2. Choose **Create an account**. Use the configured supervisor email to claim supervisor access. Other verified accounts start as operators.
+2. Choose **Create an account**. Use the configured owner email to receive Admin access. Complete first-time onboarding after verification. Other verified accounts start as Reporters.
 3. Confirm the email code and sign in. Passwords are handled by Cognito; they are not placed in source or deployment configuration.
-4. A technician must first sign up and verify their own email. The supervisor can then promote them under **Overview → Team access**. Sign out and sign in after a role change to obtain a fresh token.
-5. Report a fault, approve/assign it, and walk through technician acceptance, repair submission, and supervisor verification.
+4. A worker must first sign up and verify their own email. An Admin or Manager can then grant Worker access under **Overview → People & access**. Only Admins can grant Manager access; API permissions update immediately, while the UI refreshes with the next request.
+5. Report a fault, approve/assign it, and walk through worker acceptance, repair submission, and manager verification.
 
-The configured supervisor email is deployment configuration, not a publicly editable role field. The post-confirmation trigger grants supervisor access only after the matching email has been verified.
+The configured owner email is deployment configuration, not a publicly editable role field. The post-confirmation trigger grants Admin access only after the matching email has been verified.
 
 ## Local development
 
@@ -74,11 +74,11 @@ Normal deadlines are one hour to acknowledge, four hours for repair, and two hou
 
 ## Data and security boundaries
 
-The API checks verified email claims, role, record visibility, current assignee, allowed state, and optimistic version. A technician cannot mutate another technician's job. Duplicate detection is a machine/category suggestion, not image recognition or an automatic merge. Every state-changing decision writes an activity entry in the same DynamoDB transaction. Photo uploads are limited to five JPEG/PNG/WebP files of at most 5 MiB per batch, signed briefly, and validated before attachment. Evidence is not automatically deleted from open work orders.
+The API checks verified email claims, role, record visibility, current assignee, allowed state, and optimistic version. A worker cannot mutate another worker's job. Duplicate detection is a machine/category suggestion, not image recognition or an automatic merge. Every state-changing decision writes an activity entry in the same DynamoDB transaction. Photo uploads are limited to five JPEG/PNG/WebP files of at most 5 MiB per batch, signed briefly, and validated before attachment. Evidence is not automatically deleted from open work orders.
 
 ## Limits and costs
 
-This is a one-factory hackathon prototype with a fixed machine registry, modest-traffic list queries, and an inbox-based escalation flag. It has no email/SMS/push escalation, spare-parts inventory, offline mode, shift-calendar scheduling, or production multi-tenant boundaries. File-type checks use declared content type and object metadata, not malware scanning. Photo URLs are temporary. User sessions require fresh sign-in when tokens expire. Abandoned uploads and evidence retention need an explicit cleanup policy before production.
+This is a one-factory hackathon prototype with a fixed machine registry, modest-traffic list queries, and an inbox-based escalation flag. It has no email/SMS/push escalation, spare-parts inventory, offline mode, shift-calendar scheduling, or production multi-tenant boundaries. File checks include content type, actual size and image signatures; they are not a complete malware scan or full image decoder. Photo URLs are temporary. User sessions require fresh sign-in when tokens expire. Abandoned uploads and evidence retention need an explicit cleanup policy before production.
 
 The account was observed on an active **Paid plan with USD 100 credits**, not the Free Plan. Credits are not a hard spending limit. API throttles and short log retention reduce risk but do not guarantee a zero bill. S3 versions, DynamoDB backups, logs, workflow transitions and API/Lambda usage can incur costs.
 
@@ -96,3 +96,5 @@ Do not delete them automatically. S3 versioning means cleanup must handle prior 
 See [verification notes](docs/verification.md) and [submission draft](docs/submission.md).
 
 Final verification: 31 backend tests pass; production build and cfn-lint pass; live storage/evidence/deadline integration verified with synthetic QA data. Owner email sign-up and full browser repair flow still pending.
+
+New: [four-role hierarchy, onboarding and accessibility](docs/hierarchy-and-onboarding.md). Backend suite now has 64 passing tests. Factory imagery credits: [image sources](docs/image-credits.md).

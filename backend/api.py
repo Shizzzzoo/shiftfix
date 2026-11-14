@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
 from . import storage
-from .domain import MACHINES, TERMINAL, RuleError, now, text, transition, visible
+from .domain import MACHINES, TERMINAL, RuleError, now, text, transition, visible, canonical_role, manages
 
 TYPES={'image/jpeg','image/png','image/webp'}
 
@@ -19,8 +19,9 @@ def s3_client():
     return boto3.client('s3', region_name=region, endpoint_url=f'https://s3.{region}.amazonaws.com', config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'}))
 
 
-def public(item):
-    return {k:v for k,v in item.items() if k not in {'PK','SK','GSI1PK','GSI1SK','requestHash'}}
+def public(item, user=None):
+    hidden = set() if user and manages(user) else {'relatedResolvedIds'}
+    return {k:v for k,v in item.items() if k not in hidden and k not in {'PK','SK','GSI1PK','GSI1SK','requestHash'}}
 
 
 def user_from(event):
@@ -32,7 +33,7 @@ def user_from(event):
         # API Gateway serializes array claims as bracketed comma-separated strings.
         try: groups=json.loads(groups)
         except ValueError: groups=[x.strip(' \"') for x in groups.strip('[]').split(',')]
-    role=next((r for r in ['supervisor','technician'] if r in groups),'operator')
+    role=role_from_groups(groups, claims.get('email',''), True)
     return {'id':claims['sub'],'email':claims.get('email',''),'name':claims.get('name') or claims.get('email','User'),'role':role}
 
 
@@ -46,19 +47,22 @@ def file_metadata(files,user,stage):
         if not isinstance(key,str) or not key.startswith('uploads/'+user['id']+'/') or '..' in key:
             raise RuleError('Attachment does not belong to your upload',403)
         typ=f.get('type')
-        if typ not in TYPES: raise RuleError('Only JPEG, PNG and WebP photos are supported')
+        if not isinstance(typ,str) or typ not in TYPES: raise RuleError('Only JPEG, PNG and WebP photos are supported')
         try: info=s3.head_object(Bucket=os.environ['ASSETS_BUCKET'],Key=key)
         except ClientError as exc:
             if exc.response['Error']['Code'] in {'404','NoSuchKey','NotFound'}: raise RuleError('Photo upload is incomplete') from exc
             raise
         if not 0<info['ContentLength']<=5*1024*1024 or info.get('ContentType')!=typ:
             raise RuleError('Invalid photo size or content type')
+        prefix=s3.get_object(Bucket=os.environ['ASSETS_BUCKET'],Key=key,Range='bytes=0-15')['Body'].read()
+        valid=(typ=='image/jpeg' and prefix.startswith(b'\xff\xd8\xff')) or (typ=='image/png' and prefix.startswith(b'\x89PNG\r\n\x1a\n')) or (typ=='image/webp' and prefix.startswith(b'RIFF') and prefix[8:12]==b'WEBP')
+        if not valid: raise RuleError('Photo content does not match a supported image format')
         out.append({'key':key,'name':text(f.get('name'),'Photo name',200),'type':typ,'size':info['ContentLength'],'stage':stage})
     return out
 
 
-def signed(job):
-    result=public(job)
+def signed(job,user=None):
+    result=public(job,user)
     s3=s3_client()
     result['attachments']=[dict(a,url=s3.generate_presigned_url('get_object',Params={'Bucket':os.environ['ASSETS_BUCKET'],'Key':a['key']},ExpiresIn=900)) for a in job.get('attachments',[])]
     return result
@@ -66,9 +70,9 @@ def signed(job):
 
 def find_user(id):
     client=boto3.client('cognito-idp')
-    pages=client.get_paginator('list_users').paginate(UserPoolId=os.environ['USER_POOL_ID'],Filter='sub = "'+text(id,'Technician ID',128)+'"')
+    pages=client.get_paginator('list_users').paginate(UserPoolId=os.environ['USER_POOL_ID'],Filter='sub = "'+text(id,'Worker ID',128)+'"')
     users=[u for p in pages for u in p['Users']]
-    if not users: raise RuleError('Technician not found')
+    if not users: raise RuleError('Worker not found')
     u = users[0]
     attrs = {a['Name']: a['Value'] for a in u['Attributes']}
     if u.get('UserStatus') != 'CONFIRMED' or attrs.get('email_verified') != 'true' or not u.get('Enabled', True):
@@ -76,15 +80,65 @@ def find_user(id):
     return u
 
 
+def role_from_groups(groups, email='', verified=False):
+    if verified and email and email.lower()==os.environ.get('SUPERVISOR_EMAIL','').lower(): return 'admin'
+    roles={canonical_role(g) for g in groups}
+    return next((r for r in ['admin','manager','worker'] if r in roles),'reporter')
+
+
 def role_for(user):
     groups=boto3.client('cognito-idp').admin_list_groups_for_user(UserPoolId=os.environ['USER_POOL_ID'],Username=user['Username'])['Groups']
-    names={g['GroupName'] for g in groups}
-    return next((r for r in ['supervisor','technician'] if r in names),'operator')
+    attrs={a['Name']:a['Value'] for a in user.get('Attributes',[])}
+    return role_from_groups([g['GroupName'] for g in groups],attrs.get('email',''),attrs.get('email_verified')=='true')
+
+
+def profile_for(user):
+    item=storage.table().get_item(Key={'PK':'USER#'+user['id'],'SK':'PROFILE'},ConsistentRead=True).get('Item')
+    return {k:item[k] for k in ['displayName','department','machineIds']} if item else None
+
+
+def me(user):
+    profile=profile_for(user)
+    return dict(user,role=canonical_role(user['role']),name=profile['displayName'] if profile else user['name'],onboardingComplete=bool(profile),profile=profile)
+
+
+def onboard(data,user):
+    if set(data)!={'displayName','department','machineIds'}: raise RuleError('Provide only displayName, department and machineIds')
+    name=text(data.get('displayName'),'Display name',100)
+    if len(name)<2: raise RuleError('Display name must contain at least two characters')
+    department=data.get('department')
+    if not isinstance(department,str) or department not in {'production','maintenance','engineering','quality','operations','other'}: raise RuleError('Choose a valid department')
+    ids=data.get('machineIds')
+    if not isinstance(ids,list) or len(ids)>4 or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids) or any(i not in {m['id'] for m in MACHINES} for i in ids): raise RuleError('Choose up to four distinct registered machines')
+    storage.table().put_item(Item={'PK':'USER#'+user['id'],'SK':'PROFILE','displayName':name,'department':department,'machineIds':ids,'updatedAt':now()})
+    return me(user)
+
+
+def set_role(target_id,role,user):
+    caller=canonical_role(user['role'])
+    if caller not in {'admin','manager'}: raise RuleError('Manager access required',403)
+    if not isinstance(role,str) or role not in {'manager','worker','reporter'}: raise RuleError('Choose manager, worker or reporter')
+    target=find_user(target_id)
+    existing=role_for(target)
+    if existing=='admin': raise RuleError('The administrator role cannot be changed',403)
+    if caller=='manager' and (role=='manager' or existing=='manager'): raise RuleError('Only an administrator can manage managers',403)
+    client=boto3.client('cognito-idp'); args={'UserPoolId':os.environ['USER_POOL_ID'],'Username':target['Username']}
+    # Remove canonical and legacy memberships before granting the new role.
+    memberships=client.admin_list_groups_for_user(**args)['Groups']
+    for group in memberships:
+        if group['GroupName'] in {'manager','worker','reporter','supervisor','technician','operator'}:
+            client.admin_remove_user_from_group(**args,GroupName=group['GroupName'])
+    client.admin_add_user_to_group(**args,GroupName=role)
+    return {'id':target_id,'role':role}
 
 
 def handler(event,context):
     try:
         user=user_from(event)
+        current=find_user(user['id'])
+        user['role']=role_for(current)
+        profile=profile_for(user)
+        if profile: user['name']=profile['displayName']
         method=event['requestContext']['http']['method']
         path=event.get('rawPath','').rstrip('/')
         body=event.get('body') or '{}'
@@ -108,59 +162,60 @@ def handler(event,context):
 
 
 def route(method,path,data,user,event):
-    if method=='GET' and path=='/me': return user
+    user=dict(user,role=canonical_role(user['role']))
+    if method=='GET' and path=='/me': return me(user)
+    if method=='POST' and path=='/onboarding': return onboard(data,user)
     if method=='GET' and path=='/machines': return {'items':MACHINES}
     if method=='GET' and path=='/workorders':
-        return {'items':[public(j) for j in storage.list_jobs() if visible(j,user)]}
+        return {'items':[public(j,user) for j in storage.list_jobs() if visible(j,user)]}
     if method=='POST' and path=='/uploads':
         files=data.get('files',[])
         if not isinstance(files,list) or not 1<=len(files)<=5: raise RuleError('Choose one to five photos')
-        result=[]; s3=s3_client()
+        validated=[]
         for f in files:
+            if not isinstance(f,dict): raise RuleError('Invalid photo metadata')
             typ=f.get('type'); size=f.get('size')
-            if typ not in TYPES or not isinstance(size,int) or not 0<size<=5*1024*1024: raise RuleError('Each photo must be JPEG, PNG or WebP and at most 5 MiB')
-            name=text(f.get('name'),'Photo name',200)
+            if not isinstance(typ,str) or typ not in TYPES or isinstance(size,bool) or not isinstance(size,int) or not 0<size<=5*1024*1024: raise RuleError('Each photo must be JPEG, PNG or WebP and at most 5 MiB')
+            validated.append((typ,size,text(f.get('name'),'Photo name',200)))
+        if sum(f[1] for f in validated)>25*1024*1024: raise RuleError('Total photos must not exceed 25 MiB')
+        result=[]; s3=s3_client()
+        for typ,size,name in validated:
             key='uploads/'+user['id']+'/'+str(uuid.uuid4())
             presign=s3.generate_presigned_post(Bucket=os.environ['ASSETS_BUCKET'],Key=key,Fields={'Content-Type':typ},Conditions=[{'Content-Type':typ},['content-length-range',1,5*1024*1024]],ExpiresIn=300)
             result.append({'key':key,'name':name,'type':typ,'size':size,**presign})
         return {'items':result}
     if path=='/users' and method=='GET':
-        if user['role']!='supervisor': raise RuleError('Supervisor access required',403)
+        if not manages(user): raise RuleError('Manager access required',403)
         client=boto3.client('cognito-idp'); items=[]
         for page in client.get_paginator('list_users').paginate(UserPoolId=os.environ['USER_POOL_ID']):
             for u in page['Users']:
                 a={v['Name']:v['Value'] for v in u['Attributes']}
-                items.append({'id':a['sub'],'email':a.get('email',''),'name':a.get('name') or a.get('email','User'),'role':role_for(u)})
+                profile=profile_for({'id':a['sub']})
+                items.append({'id':a['sub'],'email':a.get('email',''),'name':profile['displayName'] if profile else a.get('name') or a.get('email','User'),'role':role_for(u)})
         return {'items':items}
     parts=path.strip('/').split('/')
     if len(parts)==3 and parts[0]=='users' and parts[2]=='role' and method=='POST':
-        if user['role']!='supervisor': raise RuleError('Supervisor access required',403)
-        role=data.get('role')
-        if role not in {'technician','operator'}: raise RuleError('Choose technician or operator')
-        u=find_user(parts[1])
-        if role_for(u)=='supervisor': raise RuleError('Cannot change supervisor role')
-        client=boto3.client('cognito-idp')
-        args={'UserPoolId':os.environ['USER_POOL_ID'],'Username':u['Username'],'GroupName':'technician'}
-        if role=='technician': client.admin_add_user_to_group(**args)
-        else: client.admin_remove_user_from_group(**args)
-        return {'id':parts[1],'role':role}
+        if not manages(user): raise RuleError('Manager access required',403)
+        return set_role(parts[1],data.get('role'),user)
     if path=='/workorders' and method=='POST': return create(data,user,event)
     if parts[0]=='workorders' and len(parts)>=2:
         job=storage.get_job(parts[1])
         if not visible(job,user): raise RuleError('You cannot access this work order',403)
         if method=='GET' and len(parts)==2:
-            out=signed(job); out['activity']=[public(a) for a in storage.events(job['id'])]
+            out=signed(job,user); out['activity']=[public(a) for a in storage.events(job['id'])]
+            if manages(user):
+                out['resolvedCandidates']=[public(j,user) for j in storage.list_jobs() if j['id'] in job.get('relatedResolvedIds',[]) and visible(j,user)]
             if job.get('mergedInto'): out['mergedInto']=job['mergedInto']
             # Linked reports retain their own evidence and authors; don't copy or lose provenance.
             out['linkedReports']=[public(j) for j in storage.list_jobs() if j.get('mergedInto')==job['id'] and visible(j,user)]
             return out
         if method=='POST' and len(parts)==3 and parts[2]=='actions':
             if data.get('action') in {'approve','reassign'}:
-                if user['role']!='supervisor': raise RuleError('Supervisor access required',403)
+                if not manages(user): raise RuleError('Manager access required',403)
                 assigned=find_user(data.get('assigneeId',''))
-                if role_for(assigned)!='technician': raise RuleError('Assign a user with technician access')
+                if role_for(assigned)!='worker': raise RuleError('Assign a user with worker access')
                 attrs={a['Name']:a['Value'] for a in assigned['Attributes']}
-                data['assigneeName']=attrs.get('name') or attrs.get('email','Technician')
+                data['assigneeName']=attrs.get('name') or attrs.get('email','Worker')
             if data.get('attachments'):
                 if data.get('action')!='submit': raise RuleError('Photos can only be added with repair submission')
                 data['attachments']=file_metadata(data['attachments'],user,'after')
@@ -175,7 +230,7 @@ def route(method,path,data,user,event):
                 extra.append({'ConditionCheck':{'TableName':os.environ['TABLE_NAME'],'Key':storage.encode({'PK':target['PK'],'SK':'META'}),'ConditionExpression':'#v = :v','ExpressionAttributeNames':{'#v':'version'},'ExpressionAttributeValues':{':v':storage.SER.serialize(target['version'])}}})
                 extra.append({'Put':{'TableName':os.environ['TABLE_NAME'],'Item':storage.encode(storage.activity(dict(target,updatedAt=now()),user,'report_merged',job['number']+': '+reason))}})
             storage.write(updated,user,data['action'],reason,old=job,extra=extra)
-            return signed(updated)
+            return signed(updated,user)
     raise RuleError('Endpoint not found',404)
 
 
@@ -188,24 +243,26 @@ def create(data,user,event):
     try:
         previous=storage.get_job(id)
         if previous.get('requestHash')!=payload_hash: raise RuleError('Idempotency key already used for a different report',409)
-        return signed(previous)
+        return signed(previous,user)
     except RuleError as exc:
         if exc.status!=404: raise
     machine=next((m for m in MACHINES if m['id']==data.get('machineId')),None)
     if not machine: raise RuleError('Choose a registered machine')
     priority=data.get('priority','medium')
-    if priority not in {'low','medium','high','critical'}: raise RuleError('Invalid priority')
+    if not isinstance(priority,str) or priority not in {'low','medium','high','critical'}: raise RuleError('Invalid priority')
     category=text(data.get('category','General'),'Category',100)
     at=now()
     related=data.get('relatedId','')
     if related:
         previous=storage.get_job(text(related,'Related work order',128))
         if not visible(previous,user) or previous['machineId']!=machine['id']: raise RuleError('Related work order must be visible and on this machine')
-    job={'PK':'WORK#'+id,'SK':'META','GSI1PK':'WORK','GSI1SK':at,'id':id,'number':'WO-'+id[:8].upper(),'machineId':machine['id'],'machineName':machine['name'],'title':text(data.get('title'),'Title',160),'description':text(data.get('description'),'Description',4000),'category':category,'priority':priority,'status':'pending_review','assignmentStatus':'unassigned','assigneeId':'','assigneeName':'','reporterId':user['id'],'reporterName':user['name'],'createdAt':at,'updatedAt':at,'version':1,'deadlineVersion':0,'deadline':'','deadlineKind':'','overdue':False,'blocked':False,'possibleDuplicate':any(j['machineId']==machine['id'] and j['category']==category and j['status'] not in TERMINAL for j in storage.list_jobs()),'attachments':file_metadata(data.get('attachments',[]),user,'before'),'relatedId':related,'requestHash':payload_hash}
+    all_jobs=storage.list_jobs()
+    resolved=[j['id'] for j in all_jobs if j['machineId']==machine['id'] and j['category']==category and j['status']=='closed']
+    job={'possibleResolved':bool(resolved),'relatedResolvedIds':resolved,'PK':'WORK#'+id,'SK':'META','GSI1PK':'WORK','GSI1SK':at,'id':id,'number':'WO-'+id[:8].upper(),'machineId':machine['id'],'machineName':machine['name'],'title':text(data.get('title'),'Title',160),'description':text(data.get('description'),'Description',4000),'category':category,'priority':priority,'status':'pending_review','assignmentStatus':'unassigned','assigneeId':'','assigneeName':'','reporterId':user['id'],'reporterName':user['name'],'createdAt':at,'updatedAt':at,'version':1,'deadlineVersion':0,'deadline':'','deadlineKind':'','overdue':False,'blocked':False,'possibleDuplicate':any(j['machineId']==machine['id'] and j['category']==category and j['status'] not in TERMINAL for j in all_jobs),'attachments':file_metadata(data.get('attachments',[]),user,'before'),'relatedId':related,'requestHash':payload_hash}
     try: storage.write(job,user,'reported')
     except RuleError as exc:
         if exc.status==409:
             previous=storage.get_job(id)
-            if previous.get('requestHash')==payload_hash: return signed(previous)
+            if previous.get('requestHash')==payload_hash: return signed(previous,user)
         raise
-    return signed(job)
+    return signed(job,user)
