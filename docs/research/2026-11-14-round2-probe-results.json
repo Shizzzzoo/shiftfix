@@ -1,0 +1,68 @@
+{
+  "mode": "isolated moto and fake actors only; no live mutations",
+  "observations": [
+    {
+      "id": "S01",
+      "finding": "Work-order display numbers can collide despite distinct immutable IDs",
+      "firstId": "981fab7a-e5c2-12b3-d8d7-a47fc10ad66d",
+      "secondId": "981fab7a-aad7-2aae-db2e-35e5997b4f36",
+      "firstNumber": "WO-981FAB7A",
+      "secondNumber": "WO-981FAB7A",
+      "sameDisplayNumber": true
+    },
+    {
+      "id": "S02",
+      "finding": "Assignment audit does not retain old/new assignee or transition version",
+      "currentAssignee": "worker-B",
+      "reassignmentEvent": {
+        "PK": "WORK#90f98532-0c96-ff76-8ea0-301c4fb9b07a",
+        "SK": "EVENT#2026-11-14T10:10:00Z#4fee713b-3fa6-4910-ade9-94dbbd236560",
+        "id": "4fee713b-3fa6-4910-ade9-94dbbd236560",
+        "at": "2026-11-14T10:10:00Z",
+        "actorId": "manager",
+        "actorName": "Test Manager",
+        "action": "reassign",
+        "reason": ""
+      },
+      "earlierWorkerInActivity": false
+    },
+    {
+      "id": "S03",
+      "finding": "Assigned worker label ignores the current onboarding display name",
+      "profileDisplayName": "Current display name",
+      "jobAssigneeName": "Original signup name"
+    },
+    {
+      "id": "S04",
+      "finding": "Receipt can exceed the quantity cap that later metadata edits enforce",
+      "receivedBalance": 1000000001,
+      "renameResult": {
+        "status": 400,
+        "message": "quantity must be an integer from 0 to 1000000000"
+      },
+      "boundaryOnly": true
+    },
+    {
+      "id": "S05",
+      "finding": "Malformed UTF-8 is classified as a server error",
+      "response": {
+        "statusCode": 500,
+        "headers": {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store"
+        },
+        "body": "{\"message\": \"Something went wrong. Please retry.\"}"
+      },
+      "logged": "{\"errorType\": \"UnicodeDecodeError\"}"
+    },
+    {
+      "id": "S06",
+      "finding": "Request budget measures decoded characters rather than UTF-8 bytes",
+      "characters": 17094,
+      "encodedBytes": 68094,
+      "configuredComparison": 65536,
+      "statusCode": 200,
+      "unknownFieldIgnored": true
+    }
+  ]
+}
