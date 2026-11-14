@@ -1,0 +1,10 @@
+node_modules/
+dist/
+__pycache__/
+.venv/
+.pytest_cache/
+*.zip
+.deploy/
+public/config.json
+
+backend/staticfiles/

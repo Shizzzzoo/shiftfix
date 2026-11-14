@@ -1,0 +1,1455 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "ShiftFix - private factory fault evidence, role-based repair review and durable deadline escalation.",
+  "Metadata": {
+    "AWSToolsMetrics": {
+      "AWSAgentToolkit": "aws-cloudformation@3"
+    }
+  },
+  "Parameters": {
+    "CodeBucket": {
+      "Type": "String"
+    },
+    "CodeKey": {
+      "Type": "String"
+    },
+    "SupervisorEmail": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Assets": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*"
+              ],
+              "AllowedMethods": [
+                "GET",
+                "POST"
+              ],
+              "AllowedOrigins": [
+                {
+                  "Fn::GetAtt": [
+                    "HttpApi",
+                    "ApiEndpoint"
+                  ]
+                },
+                "http://localhost:5173"
+              ],
+              "MaxAge": 300
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "Table": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "SK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "GSI1PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "GSI1SK",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "SK",
+            "KeyType": "RANGE"
+          }
+        ],
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "GSI1",
+            "KeySchema": [
+              {
+                "AttributeName": "GSI1PK",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "GSI1SK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "SSESpecification": {
+          "SSEEnabled": true
+        },
+        "PointInTimeRecoverySpecification": {
+          "PointInTimeRecoveryEnabled": true
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "ApiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-ApiRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Query",
+                    "dynamodb:ConditionCheckItem"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Table",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": "${Table.Arn}/index/*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${Assets.Arn}/*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-idp:ListUsers",
+                    "cognito-idp:AdminListGroupsForUser",
+                    "cognito-idp:AdminAddUserToGroup",
+                    "cognito-idp:AdminRemoveUserFromGroup"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "UserPool",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AuthRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-AuthRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-idp:AdminAddUserToGroup"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "TimerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-TimerRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:Query",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:PutItem"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Table",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StreamRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-StreamRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:DescribeStream",
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Table",
+                      "StreamArn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "states:StartExecution"
+                  ],
+                  "Resource": {
+                    "Ref": "Workflow"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "DeadLetters",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Auth": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-Auth"
+        },
+        "Runtime": "python3.13",
+        "Handler": "backend.auth.post_confirmation",
+        "Role": {
+          "Fn::GetAtt": [
+            "AuthRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "MemorySize": 256,
+        "Timeout": 25,
+        "Environment": {
+          "Variables": {
+            "SUPERVISOR_EMAIL": {
+              "Ref": "SupervisorEmail"
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AuthLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-Auth"
+        },
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "UserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": {
+          "Fn::Sub": "${AWS::StackName}-users"
+        },
+        "UsernameAttributes": [
+          "email"
+        ],
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 12,
+            "RequireLowercase": true,
+            "RequireUppercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "Schema": [
+          {
+            "Name": "email",
+            "Required": true,
+            "Mutable": true
+          },
+          {
+            "Name": "name",
+            "Required": true,
+            "Mutable": true
+          }
+        ],
+        "LambdaConfig": {
+          "PostConfirmation": {
+            "Fn::GetAtt": [
+              "Auth",
+              "Arn"
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "AuthPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Auth"
+        },
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "UserPool",
+            "Arn"
+          ]
+        },
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "supervisorGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "supervisor",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "technicianGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "technician",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "operatorGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "GroupName": "operator",
+        "UserPoolId": {
+          "Ref": "UserPool"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Client": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "UserPool"
+        },
+        "GenerateSecret": false,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH"
+        ],
+        "PreventUserExistenceErrors": "ENABLED",
+        "AccessTokenValidity": 1,
+        "IdTokenValidity": 1,
+        "RefreshTokenValidity": 7,
+        "SupportedIdentityProviders": [
+          "COGNITO"
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Api": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-Api"
+        },
+        "Runtime": "python3.13",
+        "Handler": "backend.api.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ApiRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "MemorySize": 256,
+        "Timeout": 25,
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "Table"
+            },
+            "ASSETS_BUCKET": {
+              "Ref": "Assets"
+            },
+            "USER_POOL_ID": {
+              "Ref": "UserPool"
+            },
+            "SUPERVISOR_EMAIL": {
+              "Ref": "SupervisorEmail"
+            },
+            "ACK_SECONDS": "3600",
+            "REPAIR_SECONDS": "14400",
+            "VERIFY_SECONDS": "7200"
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "ApiLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-Api"
+        },
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Timer": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-Timer"
+        },
+        "Runtime": "python3.13",
+        "Handler": "backend.deadlines.expire_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "TimerRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "MemorySize": 256,
+        "Timeout": 25,
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "Table"
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "TimerLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-Timer"
+        },
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "WorkflowRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-WorkflowRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Timer",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Workflow": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "StateMachineName": {
+          "Fn::Sub": "${AWS::StackName}-deadlines"
+        },
+        "StateMachineType": "STANDARD",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "WorkflowRole",
+            "Arn"
+          ]
+        },
+        "Definition": {
+          "Comment": "Versioned deadline wait; authoritative state checked at execution",
+          "StartAt": "WaitForDeadline",
+          "States": {
+            "WaitForDeadline": {
+              "Type": "Wait",
+              "TimestampPath": "$.deadline",
+              "Next": "CheckCurrentAssignment"
+            },
+            "CheckCurrentAssignment": {
+              "Type": "Task",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "Timer",
+                  "Arn"
+                ]
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "States.TaskFailed"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "DeadLetters": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "SqsManagedSseEnabled": true,
+        "MessageRetentionPeriod": 1209600
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Stream": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-Stream"
+        },
+        "Runtime": "python3.13",
+        "Handler": "backend.deadlines.stream_handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "StreamRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "MemorySize": 256,
+        "Timeout": 25,
+        "Environment": {
+          "Variables": {
+            "STATE_MACHINE_ARN": {
+              "Ref": "Workflow"
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StreamLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-Stream"
+        },
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StreamMapping": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "Table",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "Stream"
+        },
+        "StartingPosition": "LATEST",
+        "BatchSize": 10,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "BisectBatchOnFunctionError": true,
+        "MaximumRetryAttempts": 5,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": {
+              "Fn::GetAtt": [
+                "DeadLetters",
+                "Arn"
+              ]
+            }
+          }
+        },
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": "{\"eventName\": [\"INSERT\"], \"dynamodb\": {\"NewImage\": {\"PK\": {\"S\": [{\"prefix\": \"TIMER#\"}]}}}}"
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-api"
+        },
+        "ProtocolType": "HTTP",
+        "CorsConfiguration": {
+          "AllowOrigins": [
+            "http://localhost:5173"
+          ],
+          "AllowHeaders": [
+            "Content-Type",
+            "Authorization",
+            "Idempotency-Key"
+          ],
+          "AllowMethods": [
+            "GET",
+            "POST",
+            "OPTIONS"
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Authorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "Name": "Cognito",
+        "JwtConfiguration": {
+          "Audience": [
+            {
+              "Ref": "Client"
+            }
+          ],
+          "Issuer": {
+            "Fn::Sub": "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Api",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Route": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "ANY /{proxy+}",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "ApiAccessLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Stage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingBurstLimit": 10,
+          "ThrottlingRateLimit": 5
+        },
+        "AccessLogSettings": {
+          "DestinationArn": {
+            "Fn::GetAtt": [
+              "ApiAccessLog",
+              "Arn"
+            ]
+          },
+          "Format": "{\"requestId\":\"$context.requestId\",\"status\":\"$context.status\",\"route\":\"$context.routeKey\"}"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "ApiPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Api"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/*"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AssetsPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "Assets"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "Assets",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Sub": "${Assets.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "${AWS::StackName}-StaticRole"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedRuntime",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "Static": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-Static"
+        },
+        "Runtime": "python3.13",
+        "Handler": "backend.static.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "StaticRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "MemorySize": 256,
+        "Timeout": 25
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-Static"
+        },
+        "RetentionInDays": 7
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Static",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticRoute0": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /",
+        "AuthorizationType": "NONE",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "StaticIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticRoute1": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /config.json",
+        "AuthorizationType": "NONE",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "StaticIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticRoute2": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /assets/{proxy+}",
+        "AuthorizationType": "NONE",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "StaticIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "StaticPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Static"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/*"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "AppUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "UserPoolId": {
+      "Value": {
+        "Ref": "UserPool"
+      }
+    },
+    "ClientId": {
+      "Value": {
+        "Ref": "Client"
+      }
+    },
+    "AssetsBucket": {
+      "Value": {
+        "Ref": "Assets"
+      }
+    },
+    "TableName": {
+      "Value": {
+        "Ref": "Table"
+      }
+    },
+    "ApiFunction": {
+      "Value": {
+        "Ref": "Api"
+      }
+    },
+    "WorkflowArn": {
+      "Value": {
+        "Ref": "Workflow"
+      }
+    },
+    "StaticFunction": {
+      "Value": {
+        "Ref": "Static"
+      }
+    }
+  }
+}
