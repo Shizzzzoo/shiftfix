@@ -40,3 +40,28 @@ IAM Policy Autopilot 0.4.0 analyzed runtime sources. Its baseline included optio
 Unit tests cover role filtering, strong-read reassignment checks, private field projection, unknown tools/fields, forged histories, draft ownership/expiry, idempotent confirmation, paused rules, atomic quotas, leases, authority rechecks and explicit model denial. Browser tests use marked local fixtures to check the UI and simulated model responses. Production search/auth/confirmation checks and the exact deployment state are recorded in verification.md. Do not present mocked replies as successful live inference.
 
 Run `node scripts/verify-assistant.mjs` against local Vite on port 5174 after generating `.deploy/demo-fixture.json` with `python3 scripts/build-demo-data.py`. This checks blocked-inference handling, direct search, no writes before confirmation, idempotent UI controls, paused rule-editor handoff, expired drafts, conversation continuity and clearing after a role change.
+
+
+## Temporary Gemini provider (15 November 2026)
+
+The interface is provider-neutral at the owner's request. The project description discloses Gemini as a temporary external model while AWS Bedrock access is restricted. The existing Cognito, API Gateway, Lambda, DynamoDB, S3 and Step Functions workflows continue to run on AWS. The provider adapter is selected through AssistantProvider; switching is explicit configuration, never an automatic export to a second provider after an error.
+
+Gemini uses the generateContent REST endpoint and the same allowlisted tool executor and confirmation flow. Native function-call IDs and opaque thought signatures are retained inside one Lambda request so subsequent function responses remain valid. Reasoning text and native protocol metadata are never included in the public reply. HTTPS redirects are rejected, credentials are in a request header, and provider error bodies are neither returned nor logged. Each Gemini call has a six-second network timeout, bounded response size and at most1024 output tokens including thinking; the original three-call/six-tool/per-user/factory quotas remain. Bedrock keeps its512-token limit.
+
+The owner confirmed a **free-tier Gemini project**. GeminiDataMode defaults to demo. Only demo-tagged, role-accessible work orders, catalog records and display-only people can be exported by chat tools. Real identity names are removed if a demo work order was subsequently assigned/reported by a genuine user. Only demo-tagged activity is included. Drafts must reference demo assets/meters; normal editor operations and independent direct search remain available. Newly confirmed work orders are genuine audit records and are not automatically reclassified as imported demo records. Do not enter personal or confidential information in chat; the UI gives that brief data-scope notice. Marking a record demo is not automatic personal-data anonymization: imported demonstration records must continue to contain fictional content.
+
+Google's unpaid-service terms permit product improvement and human review of inputs/outputs and prohibit sending personal/confidential information: https://ai.google.dev/gemini-api/docs/terms. Enabling paid mode is an explicit deployment change requiring an active billed Google project and appropriate data handling; it is not inferred from possession of a key. The configured model defaults to gemini-3.5-flash-lite; actual project model availability must be verified by a real invocation before claiming the feature works.
+
+### Fresh credential setup
+
+The key originally pasted in chat was not used or copied into a file. Revoke it at Google. The replacement is entered only in the owner's terminal:
+
+```sh
+uv run scripts/configure-gemini-secret.py
+```
+
+The script has inline uv dependencies including botocore[crt] for AWS login profiles. `--check` verifies SDK dependencies and STS sign-in before any key prompt. The original command omitted CRT and failed before a secret could be stored; that dependency and prompt ordering are corrected. Hidden prompts reject mismatches/noninteractive input; only the secret ARN is printed. It writes directly to Secrets Manager without reading a stored value. A new secret uses a dedicated rotating KMS key; Google API-key rotation itself is manual. Secrets Manager and a customer-managed KMS key have ongoing AWS charges; they are not a hard-capped free service. No new support plan is involved.
+
+Supply that nonsecret ARN as GeminiKeySecretArn in CloudFormation, AssistantProvider=gemini and GeminiDataMode=demo. The template uses a Secrets Manager dynamic reference for the Assistant Lambda environment; the key is not a raw stack parameter, template literal, source file, frontend value or runtime-role permission. Do not print the function's Environment configuration. Secret changes require a Lambda environment update/redeployment to resolve a fresh value. No GetSecretValue or BatchGetSecretValue was called by the assistant during setup. The original Bedrock permissions/configuration remain available.
+
+Deployment status and actual inference results must be read from the final release entry in verification.md; compilation/mocked tests alone do not prove a working live Gemini call.

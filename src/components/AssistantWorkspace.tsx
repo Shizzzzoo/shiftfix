@@ -153,7 +153,7 @@ export function AssistantWorkspace({
           <div>
             <strong>Maintenance assistant</strong>
             <small>
-              {status?.model || "Amazon Bedrock"} · conversation stays in this
+              Maintenance assistant · conversation stays in this
               tab
             </small>
           </div>
@@ -169,13 +169,18 @@ export function AssistantWorkspace({
             New conversation
           </button>
         </div>
+        {status?.dataScope === "demo" && (
+          <div className="notice" role="note">
+            This assistant uses fictional demo records. Do not enter personal or
+            confidential information. Direct search below covers your normal workspace.
+          </div>
+        )}
         {verification && (
           <div className="notice assistant-verification" role="status">
-            <strong>Bedrock account access pending</strong>
+            <strong>Assistant access pending</strong>
             <p>
-              Bedrock is currently refusing inference for this account. You can
-              use direct workspace search below. Once AWS completes
-              verification, retry your message here.
+              The model service is currently unavailable. You can
+              use direct workspace search below and retry your message later.
             </p>
           </div>
         )}
@@ -235,7 +240,7 @@ export function AssistantWorkspace({
           ))}
           {busy && (
             <p className="assistant-thinking" role="status">
-              Checking permitted records and asking Bedrock…
+              Checking permitted records and preparing your answer…
             </p>
           )}
         </div>

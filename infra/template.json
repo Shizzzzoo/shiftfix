@@ -15,6 +15,33 @@
     },
     "SupervisorEmail": {
       "Type": "String"
+    },
+    "AssistantProvider": {
+      "Type": "String",
+      "Default": "bedrock",
+      "AllowedValues": [
+        "bedrock",
+        "gemini"
+      ]
+    },
+    "GeminiModelId": {
+      "Type": "String",
+      "Default": "gemini-3.5-flash-lite",
+      "AllowedPattern": "gemini-[a-zA-Z0-9.-]{1,100}"
+    },
+    "GeminiDataMode": {
+      "Type": "String",
+      "Default": "demo",
+      "AllowedValues": [
+        "demo",
+        "paid"
+      ],
+      "Description": "Use demo for unpaid API projects; paid requires an active Google billing project."
+    },
+    "GeminiKeySecretArn": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Existing Secrets Manager secret ARN with api_key JSON field. Never enter a raw key."
     }
   },
   "Resources": {
@@ -1901,7 +1928,27 @@
             "BEDROCK_REGION": {
               "Ref": "AWS::Region"
             },
-            "BEDROCK_MODEL_ID": "apac.amazon.nova-micro-v1:0"
+            "BEDROCK_MODEL_ID": "apac.amazon.nova-micro-v1:0",
+            "ASSISTANT_PROVIDER": {
+              "Ref": "AssistantProvider"
+            },
+            "GEMINI_MODEL_ID": {
+              "Ref": "GeminiModelId"
+            },
+            "GEMINI_DATA_MODE": {
+              "Ref": "GeminiDataMode"
+            },
+            "GEMINI_API_KEY": {
+              "Fn::If": [
+                "UseGemini",
+                {
+                  "Fn::Sub": "{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key}}"
+                },
+                {
+                  "Ref": "AWS::NoValue"
+                }
+              ]
+            }
           }
         }
       },
@@ -2180,6 +2227,45 @@
       "Value": {
         "Ref": "Assistant"
       }
+    }
+  },
+  "Conditions": {
+    "UseGemini": {
+      "Fn::Equals": [
+        {
+          "Ref": "AssistantProvider"
+        },
+        "gemini"
+      ]
+    }
+  },
+  "Rules": {
+    "GeminiRequiresSecret": {
+      "RuleCondition": {
+        "Fn::Equals": [
+          {
+            "Ref": "AssistantProvider"
+          },
+          "gemini"
+        ]
+      },
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "GeminiKeySecretArn"
+                  },
+                  ""
+                ]
+              }
+            ]
+          },
+          "AssertDescription": "Supply an existing Secrets Manager secret ARN to enable Gemini."
+        }
+      ]
     }
   }
 }

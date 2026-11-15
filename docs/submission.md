@@ -20,7 +20,7 @@ Each decision appears in the activity timeline. An overdue deadline flags the wo
 
 ## How the AWS services connect
 
-- **Amazon Cognito** handles sign-up, email verification and sign-in. Server-enforced roles distinguish operators, technicians and supervisors.
+- **Amazon Cognito** handles sign-up, email verification and sign-in. Server-enforced Admin, Manager, Worker and Reporter roles govern access.
 - **Amazon API Gateway** validates JWTs before sending application requests to **AWS Lambda**.
 - The Python API Lambda applies state and ownership rules and writes work orders plus activity atomically to **Amazon DynamoDB**.
 - **Amazon S3** stores private evidence. Browsers upload through short-lived signed requests, and authorized viewers receive temporary download links.
@@ -39,7 +39,7 @@ Conditional writes protect against two reviewers deciding from the same old reco
 
 Local domain and mocked-storage tests cover role boundaries, current ownership, optimistic conflicts, report retry idempotency, duplicate handling, assignment return, clarification/resubmission, rejected verification, and stale or repeated deadline callbacks. See `docs/verification.md` for recorded checks. Do not claim complete live end-to-end verification until the confirmed supervisor and technician have completed the deployed workflow.
 
-The prototype uses a fixed machine registry, one factory, and inbox flags rather than external notifications. It does not include spare-parts inventory or production file scanning. No measured waste, cost saving, uptime, or maintenance-time improvement is claimed.
+The prototype supports managed equipment, a location hierarchy, spare-parts inventory, purchases, inspections and paused demonstration maintenance plans. It serves one factory and uses inbox flags rather than external notifications. Production malware scanning is outside this prototype. No measured waste, cost saving, uptime, or maintenance-time improvement is claimed.
 
 ## Links to fill before submission
 
@@ -58,3 +58,10 @@ The prototype uses a fixed machine registry, one factory, and inbox flags rather
 - 2:25–2:40: Show architecture and explain how conditional writes and deadline versions protect the workflow.
 
 Record actual deployed behavior; label demonstration data and shortened timers. Omit any segment that has not been verified, and adjust the script rather than implying it worked.
+
+
+## Optional assistant and temporary model provider
+
+Ask ShiftFix searches role-permitted records and prepares work-order or paused maintenance-rule drafts for human review. The AWS Bedrock integration is implemented, but account-level model invocation is currently restricted. A temporary external LLM adapter uses the Gemini API while AWS access is being resolved; the application, authorization, records, evidence and durable maintenance workflows remain on AWS serverless services. This is not a claim of working Bedrock inference.
+
+The temporary provider uses Google's free tier and is restricted to fictional demo records. Work-order creation requires explicit confirmation; rules open paused in the regular editor. Provider branding is omitted from the interface, with this implementation choice disclosed here. **Before publishing:** verify the final Gemini deployment and real tool calls against docs/verification.md; do not present a mocked or pending model call as working.
