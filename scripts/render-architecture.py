@@ -1,6 +1,7 @@
 """Render the ShiftFix architecture as editable SVG and a 3600px PNG."""
 from pathlib import Path
 from html import escape
+import base64
 import cairosvg
 from PIL import ImageFont
 
@@ -20,6 +21,9 @@ def text(x,y,t,size=18,color='#405569',weight=400,anchor='start'):
 def logo(x,y,size):
  # Original factory roof + verified-repair mark, shared with the standalone PNG.
  s.append(f'<g transform="translate({x} {y}) scale({size/100})">{logo_mark}</g>')
+def aws_icon(x,y,size,name):
+ data=base64.b64encode((OUT/'aws-icons'/f'{name}.svg').read_bytes()).decode()
+ s.append(f'<image x="{x}" y="{y}" width="{size}" height="{size}" href="data:image/svg+xml;base64,{data}"/>')
 def line(d,purple=False,dash=False):
  color='#8353b7' if purple else '#526b80'
  s.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#{"purple" if purple else "arrow"})" '+('stroke-dasharray="8 6"' if dash else '')+'/>')
@@ -30,8 +34,12 @@ def label(x,y,t,purple=False):
 def card(x,y,w,h,kicker,title,lines,color,icon,fill='#fff'):
  rect(x,y,w,h,fill,'#dbe4ed',16,'filter="url(#shadow)"')
  rect(x,y,6,h,color,r=3)
- rect(x+20,y+20,42,42,color,r=10)
- text(x+41,y+48,icon,22,'#fff',700,'middle')
+ service={'λ':'AWS-Lambda','ID':'Amazon-Cognito','↗':'Amazon-API-Gateway','S3':'Amazon-Simple-Storage-Service','DB':'Amazon-DynamoDB','◷':'Amazon-EventBridge','≋':'DynamoDB-Stream','⋈':'AWS-Step-Functions','UI':'Client'}.get(icon)
+ if service:
+  aws_icon(x+18,y+16,50,service)
+ else:
+  rect(x+20,y+20,42,42,color,r=10)
+  text(x+41,y+48,icon,22,'#fff',700,'middle')
  text(x+78,y+34,kicker.upper(),12,color,700)
  font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',20)
  title_size=min(20,20*(w-100)/font.getlength(title))
@@ -122,8 +130,14 @@ text(330,1374,'Conditional business update  +  audit event  +  durable, version-
 
 rect(40,1460,1720,112,'#e9eff5',r=18)
 for x,title,desc in [(70,'CloudFormation','Manual IaC deployments'),(410,'IAM','Scoped service roles'),(750,'CloudWatch','Application + API logs'),(1090,'Amazon SQS','Async failure destinations'),(1430,'Deployment model','On-demand compute')]:
- text(x,1497,title,18,'#183747',700);text(x,1528,desc,15,'#526b80')
+ service={'CloudFormation':'AWS-CloudFormation','IAM':'AWS-Identity-and-Access-Management','CloudWatch':'Amazon-CloudWatch','Amazon SQS':'Amazon-Simple-Queue-Service'}.get(title)
+ if service:
+  aws_icon(x,1484,46,service)
+  text(x+58,1500,title,18,'#183747',700);text(x+58,1528,desc,13,'#526b80')
+ else:
+  text(x,1497,title,18,'#183747',700);text(x,1528,desc,15,'#526b80')
 text(60,1610,'Solid: application / event flow     Dashed: identity validation, signed access or external model call',14,'#607488')
+text(60,1638,'Service and resource icons: official AWS Architecture Icons, July 2026. ShiftFix factory mark: original artwork.',12,'#607488')
 text(1740,1610,'github.com/Shizzzzoo/shiftfix',14,'#607488',500,'end')
 s.append('</svg>')
 svg='\n'.join(s)
