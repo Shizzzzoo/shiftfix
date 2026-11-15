@@ -22,6 +22,9 @@ https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20
 Endpoint or live demo:
 The supplied rules require a PUBLIC video shorter than 3 minutes in the submission's demo field. If this UI field is that demo field, put the video URL here and retain the live app link in the body. If a separate challenge video field exists, place the public video there and the live app URL here. No video URL has been supplied in this session.
 
+Local video draft:
+`docs/submission-assets/shiftfix-demo.mp4` (1:57.92). This Playwright recording uses fictional browser fixtures and contains an explicit scripted-demo label. It shows the UI flow and architecture, but the work-order and assistant API responses in this recording are simulated. Record a genuine authenticated live workflow for the required end-to-end hackathon demonstration, then upload the final video publicly to one of the permitted video services. A GitHub file link alone does not satisfy the rules.
+
 Jupyter or SageMaker notebook:
 Leave blank. This project does not use either notebook product.
 

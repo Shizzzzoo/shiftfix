@@ -1,5 +1,7 @@
 # Suggested 2:45 demo recording
 
+An initial silent, captioned Playwright walkthrough is available at `docs/submission-assets/shiftfix-demo.mp4` (1:57.92). It is a **scripted UI demonstration with fictional API fixtures**, labeled in the video. Use it to review pacing and coverage. The challenge requires a public video of the build running end to end; the final submission should capture authenticated requests against the deployed API and actual saved work-order transitions. The video also needs a public YouTube, Vimeo, Facebook Video or Youku URL in the demo field.
+
 Use real deployed screens, fictional demo records and prepared verified accounts. Do not show passwords, verification emails or cloud/API credentials. Only show steps that actually work; allow time for loading. The recording must remain below3minutes.
 
 0:00–0:15 — Problem and overview
