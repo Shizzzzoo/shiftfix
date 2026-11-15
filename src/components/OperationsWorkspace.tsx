@@ -502,6 +502,7 @@ export function OperationsWorkspace({
             <label className="search">
               <Search size={17} aria-hidden="true" />
               <input
+                type="search"
                 aria-label={`Search ${page}`}
                 placeholder={`Search ${page.toLowerCase()}…`}
                 value={search}

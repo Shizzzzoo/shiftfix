@@ -18,13 +18,16 @@ import {
   X,
   ChevronRight,
   Factory,
+  BookOpen,
   ImagePlus,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
 import "./style.css";
 import "./operations.css";
+import "./revamp.css";
 import { Onboarding } from "./components/Onboarding";
+import { AccessibilityControls } from "./components/AccessibilityControls";
 import { PhotoInput } from "./components/PhotoInput";
 import { validateImages } from "./uploads";
 type Config = {
@@ -355,6 +358,18 @@ function App() {
     [files, setFiles] = useState<File[]>([]),
     [loading, setLoading] = useState(false),
     [announcement, setAnnouncement] = useState("");
+  const [showGuide, setShowGuide] = useState(false);
+  const guideOrigin = useRef<string | null>(null);
+  function openGuide(origin: string) {
+    guideOrigin.current = origin;
+    setShowGuide(true);
+  }
+  useEffect(() => {
+    if (!showGuide && guideOrigin.current) {
+      document.getElementById(guideOrigin.current)?.focus();
+      guideOrigin.current = null;
+    }
+  }, [showGuide]);
   const supervisor = ["admin", "manager"].includes(me?.role || "");
   const admin = me?.role === "admin";
   const [contrast, setContrast] = useState(
@@ -466,14 +481,28 @@ function App() {
     }
   }
   if (!logged) return <Login onLogin={() => setLogged(true)} />;
-  if (me?.onboardingComplete === false)
+  if (me && (me.onboardingComplete === false || showGuide))
     return (
       <Onboarding
         me={me}
         machines={machines}
         save={(v) => api("/onboarding", v)}
-        onDone={load}
+        replay={showGuide}
+        accessibility={{
+          contrast,
+          largeText,
+          onContrast: () => setContrast(!contrast),
+          onLargeText: () => setLargeText(!largeText),
+        }}
+        onDone={async () => {
+          if (showGuide) setShowGuide(false);
+          else await load();
+        }}
         onSignOut={() => {
+          if (showGuide) {
+            setShowGuide(false);
+            return;
+          }
           token = "";
           sessionStorage.removeItem("shiftfix-token");
           setLogged(false);
@@ -566,9 +595,21 @@ function App() {
             Operations <ChevronRight size={16} />
             <b>{page}</b>
           </span>
-          <span>
-            <Factory size={18} /> Plant 01
-          </span>
+          <div className="workspace-header-actions">
+            <button
+              className="workspace-guide-button"
+              id="header-workspace-guide"
+              aria-label="Open workspace guide"
+              onClick={() => openGuide("header-workspace-guide")}
+            >
+              <BookOpen size={16} aria-hidden="true" />
+              <span>Workspace guide</span>
+            </button>
+            <span>
+              <Factory size={17} aria-hidden="true" />
+              Plant 01
+            </span>
+          </div>
         </header>
         <div className="content">
           {me?.demoDataset && (
@@ -644,40 +685,42 @@ function App() {
             />
           ) : (
             <>
-              <div className="stats">
-                {[
-                  [ClipboardList, "Needs review", review.length],
-                  [
-                    RefreshCw,
-                    "In progress",
-                    live.filter((w) => w.status === "in_progress").length,
-                  ],
-                  [
-                    AlertCircle,
-                    "Overdue",
-                    live.filter((w) => w.overdue).length,
-                  ],
-                  [
-                    CheckCircle2,
-                    "Closed today",
-                    items.filter(
-                      (w) =>
-                        w.status === "closed" &&
-                        w.closedAt &&
-                        new Date(w.closedAt).toDateString() ===
-                          new Date().toDateString(),
-                    ).length,
-                  ],
-                ].map(([I, l, n]: any) => (
-                  <div key={l}>
-                    <I size={26} />
-                    <div>
-                      <span>{l}</span>
-                      <strong>{String(n).padStart(2, "0")}</strong>
+              {page !== "Help & accessibility" && (
+                <div className="stats">
+                  {[
+                    [ClipboardList, "Needs review", review.length],
+                    [
+                      RefreshCw,
+                      "In progress",
+                      live.filter((w) => w.status === "in_progress").length,
+                    ],
+                    [
+                      AlertCircle,
+                      "Overdue",
+                      live.filter((w) => w.overdue).length,
+                    ],
+                    [
+                      CheckCircle2,
+                      "Closed today",
+                      items.filter(
+                        (w) =>
+                          w.status === "closed" &&
+                          w.closedAt &&
+                          new Date(w.closedAt).toDateString() ===
+                            new Date().toDateString(),
+                      ).length,
+                    ],
+                  ].map(([I, l, n]: any) => (
+                    <div key={l}>
+                      <I size={26} />
+                      <div>
+                        <span>{l}</span>
+                        <strong>{String(n).padStart(2, "0")}</strong>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               {page === "Help & accessibility" ? (
                 <section className="panel help-panel">
                   <h2>Make ShiftFix work for you.</h2>
@@ -685,34 +728,26 @@ function App() {
                     Keyboard-friendly controls, clear decisions, and a workspace
                     you can read comfortably.
                   </p>
-                  <div className="preference">
+                  <AccessibilityControls
+                    contrast={contrast}
+                    largeText={largeText}
+                    onContrast={() => setContrast(!contrast)}
+                    onLargeText={() => setLargeText(!largeText)}
+                  />
+                  <div className="guide-invitation">
                     <div>
-                      <h3>High contrast</h3>
+                      <h3>A quick tour of the workspace</h3>
                       <p>
-                        Stronger text, borders, and status labels. Status is
-                        always written in text, not just color.
+                        Review the dashboard, maintenance flow, inventory,
+                        planning and reading preferences.
                       </p>
                     </div>
                     <button
-                      aria-pressed={contrast}
-                      onClick={() => setContrast(!contrast)}
+                      id="help-workspace-guide"
+                      onClick={() => openGuide("help-workspace-guide")}
                     >
-                      {contrast ? "High contrast on" : "Turn on high contrast"}
-                    </button>
-                  </div>
-                  <div className="preference">
-                    <div>
-                      <h3>Larger interface text</h3>
-                      <p>
-                        Increase text in tables, forms, and repair details.
-                        Browser zoom is also supported.
-                      </p>
-                    </div>
-                    <button
-                      aria-pressed={largeText}
-                      onClick={() => setLargeText(!largeText)}
-                    >
-                      {largeText ? "Larger text on" : "Use larger text"}
+                      <BookOpen size={16} />
+                      Open workspace guide
                     </button>
                   </div>
                   <h3>Your role: {roleLabels[me?.role]}</h3>
@@ -792,6 +827,7 @@ function App() {
                       <label className="search">
                         <Search size={17} />
                         <input
+                          type="search"
                           aria-label="Search work orders"
                           placeholder="Search WO, machine, or keyword…"
                           value={search}

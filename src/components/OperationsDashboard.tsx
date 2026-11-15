@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   Download,
-  Filter,
+  Search,
   ClipboardList,
   Clock,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   SkipForward,
 } from "lucide-react";
 import { downloadCsv } from "../csv";
+import { DashboardFilters, type FilterField } from "./DashboardFilters";
 type R = Record<string, any>;
 const names: Record<string, string> = {
   pending_review: "Pending request",
@@ -33,7 +34,7 @@ export function OperationsDashboard({
   open: (id: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const update = (k: string, v: string) => setFilters({ ...filters, [k]: v });
+  const [query, setQuery] = useState("");
   const machine = (w: R) => machines.find((m) => m.id === w.machineId) || {};
   const value = (w: R, key: string) => w[key] || machine(w)[key] || "";
   const category = (w: R) => String(value(w, "categoryId") || w.category || "");
@@ -54,6 +55,15 @@ export function OperationsDashboard({
     () =>
       items
         .filter((w) => !w.archived)
+        .filter(
+          (w) =>
+            !query.trim() ||
+            [w.number, w.title, w.machineName, w.assigneeName].some((v) =>
+              String(v || "")
+                .toLowerCase()
+                .includes(query.trim().toLowerCase()),
+            ),
+        )
         .filter((w) =>
           Object.entries(filters).every(
             ([k, v]) =>
@@ -63,7 +73,7 @@ export function OperationsDashboard({
                 : k === "from"
                   ? new Date(w.createdAt) >= new Date(v + "T00:00")
                   : k === "to"
-                    ? new Date(w.createdAt) <= new Date(v + "T23:59:59")
+                    ? new Date(w.createdAt) <= new Date(v + "T23:59:59.999")
                     : k === "machineId"
                       ? w.machineId === v
                       : k === "category"
@@ -71,7 +81,7 @@ export function OperationsDashboard({
                         : String(value(w, k)) === v),
           ),
         ),
-    [items, machines, filters],
+    [items, machines, catalog, filters, query],
   );
   const active = jobs.filter(
       (w) => !["closed", "rejected", "merged", "skipped"].includes(w.status),
@@ -170,71 +180,91 @@ export function OperationsDashboard({
       )
       .slice(0, 10);
   }
-  const select = (key: string, label: string, opts: [string, string][]) => (
-    <label className="dashboard-filter" key={key}>
-      <span>{label}</span>
-      <select
-        aria-label={label}
-        value={filters[key] || ""}
-        onChange={(e) => update(key, e.target.value)}
-      >
-        <option value="">All</option>
-        {opts.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
+  const fields: FilterField[] = [
+    { key: "status", label: "Status", choices: Object.entries(names) },
+    {
+      key: "machineId",
+      label: "Asset",
+      choices: machines.map((m) => [m.id, (m.code || m.id) + " · " + m.name]),
+    },
+    {
+      key: "typeId",
+      label: "Asset type",
+      choices: (catalog.asset_types || [])
+        .filter((x) => !x.archived)
+        .map((x) => [x.id, x.name]),
+    },
+    { key: "category", label: "Category", choices: categoryChoices },
+    { key: "teamId", label: "Team", choices: choices("teamId") },
+    { key: "assigneeId", label: "Assigned to", choices: choices("assigneeId") },
+    {
+      key: "locationId",
+      label: "Location",
+      choices: (catalog.locations || [])
+        .filter((x) => !x.archived)
+        .map((x) => [x.id, x.name]),
+    },
+    {
+      key: "zoneId",
+      label: "Zone",
+      choices: (catalog.zones || [])
+        .filter((x) => !x.archived)
+        .map((x) => [x.id, x.name]),
+      parent: "locationId",
+      parents: Object.fromEntries(
+        (catalog.zones || []).map((x) => [x.id, x.locationId]),
+      ),
+    },
+    {
+      key: "subzoneId",
+      label: "Sub-zone",
+      choices: (catalog.subzones || [])
+        .filter((x) => !x.archived)
+        .map((x) => [x.id, x.name]),
+      parent: "zoneId",
+      ancestor: {
+        key: "locationId",
+        parents: Object.fromEntries(
+          (catalog.subzones || []).map((x) => [
+            x.id,
+            (catalog.zones || []).find((z) => z.id === x.zoneId)?.locationId ||
+              "",
+          ]),
+        ),
+      },
+      parents: Object.fromEntries(
+        (catalog.subzones || []).map((x) => [x.id, x.zoneId]),
+      ),
+    },
+  ];
   return (
     <div className="operations-dashboard">
-      <div className="dashboard-filterbar">
-        <Filter size={17} aria-hidden="true" />
-        <strong>Filter dashboard</strong>
-        {select("status", "WO status", Object.entries(names))}
-        <label className="dashboard-filter">
-          <span>From date</span>
-          <input
-            type="date"
-            value={filters.from || ""}
-            onChange={(e) => update("from", e.target.value)}
+      <div className="dashboard-tools">
+        <div className="dashboard-tools-heading">
+          <strong>Maintenance overview</strong>
+          <span role="status">{jobs.length} matching work orders</span>
+        </div>
+        <div className="dashboard-tools-controls">
+          <label className="search dashboard-search">
+            <Search size={16} aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Search dashboard"
+              placeholder="Search work, assets or people…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <DashboardFilters
+            values={filters}
+            onChange={setFilters}
+            fields={fields}
           />
-        </label>
-        <label className="dashboard-filter">
-          <span>To date</span>
-          <input
-            type="date"
-            min={filters.from}
-            value={filters.to || ""}
-            onChange={(e) => update("to", e.target.value)}
-          />
-        </label>
-        {select(
-          "machineId",
-          "Asset",
-          machines.map((m) => [m.id, (m.code || m.id) + " · " + m.name]),
-        )}
-        {select("typeId", "Asset type", choices("typeId"))}
-        {select("category", "Category", categoryChoices)}
-        {select("teamId", "Team", choices("teamId"))}
-        {select("assigneeId", "User", choices("assigneeId"))}
-        {select(
-          "locationId",
-          "Location",
-          (catalog.locations || []).map((x) => [x.id, x.name]),
-        )}
-        {select(
-          "zoneId",
-          "Zone",
-          (catalog.zones || []).map((x) => [x.id, x.name]),
-        )}
-        {select(
-          "subzoneId",
-          "Sub-zone",
-          (catalog.subzones || []).map((x) => [x.id, x.name]),
-        )}
-        <button onClick={() => setFilters({})}>Reset filters</button>
+          <button onClick={exportJobs} aria-label="Export filtered work orders">
+            <Download size={16} />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
       <div className="metric-cards">
         {[

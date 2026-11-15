@@ -15,3 +15,6 @@ Four-role/onboarding iteration: CloudFormation UPDATE_COMPLETE with immutable ba
 Operations expansion: final template `template-v8.json`, immutable code `backend-v8.zip`, CloudFormation UPDATE_COMPLETE. Added hourly EventBridge Scheduler, scoped invocation role and Planning Lambda with retries/DLQ. Planning role includes the table actions and Query on GSI1, needed for duplicate advisory checks. Existing data/auth/evidence resources preserved. 89 backend tests pass. Live purchase/stock/recurrence checks and cleanup are recorded in verification.md; module setup is in operations-guide.md.
 
 Demo history release: backend-v9.zip deployed with UsePreviousTemplate, UPDATE_COMPLETE. No new infrastructure or identities. Added conditional demo import, page disclosure, display-only roster, paused-plan previews and keyboard-focusable populated charts. See demo-data.md.
+
+
+Pending component revamp (2026-11-15): tested local package is ready for backend-v10.zip. Deployment has not started because the AWS MCP tools became unavailable (Unknown tool) and local AWS CLI returned NoCredentials. Last confirmed live stack still uses backend-v9.zip; reconnect AWS MCP, check the new artifact key is unused and deploy with UsePreviousTemplate. See verification.md for package hash and local/live check boundaries.

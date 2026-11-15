@@ -181,8 +181,10 @@ async function axe(label) {
   if (a.violations.length) throw Error(label + " accessibility failure");
 }
 await axe("Dashboard");
+await p.getByRole("button", { name: "Filters", exact: true }).click();
 await p.getByLabel("Asset", { exact: true }).selectOption("M-012");
-await p.getByRole("button", { name: "Reset filters" }).click();
+await p.getByRole("button", { name: "Apply filters", exact: true }).click();
+await p.getByRole("button", { name: "Clear all", exact: true }).click();
 await p.getByRole("button", { name: "Vendors", exact: true }).click();
 await p.getByRole("button", { name: "Add record", exact: true }).click();
 await p.getByLabel("Name *", { exact: true }).fill("Precision Spares");
