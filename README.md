@@ -1,106 +1,162 @@
 # ShiftFix
 
-A serverless factory-maintenance prototype: from a machine-fault photo to an owned task, an auditable decision, and a manager-verified repair.
+**Factory maintenance that stays owned across shifts.**
 
-## What it does
+ShiftFix is a serverless factory-maintenance workspace built for the AWS Builder Center **Weekend Challenge: No Pipeline, No Problem**. It connects machine-fault reports, private photo evidence, manager review, technician ownership, durable deadlines and verified repairs.
 
-- Reporters report faults on a small Plant 01 machine registry with descriptions, priority, categories and optional private photo evidence.
-- Managers approve and assign requests, ask for details, reject with a reason, merge duplicate reports, or explicitly keep similar reports separate.
-- Workers accept their current assignments, mark a repair blocked, return an incorrect assignment with a reason, and submit repair notes/photos.
-- Managers accept a completed repair or send it back for rework. A returned assignment claimed to be already repaired can be closed only by a manager with a recorded explanation.
-- Reporters can resubmit a request after clarification. Closed/rejected work can have linked follow-up reports.
-- A timeline preserves who did what and why. Merged reports retain their original authors and evidence.
-- Step Functions waits for versioned deadlines, then rechecks current state before flagging an overdue job. Reassignment, closure, and deadline changes make old timers harmless.
-- Managers can promote verified users to workers from Overview → Team access.
+[Live application](https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20) · [Project write-up](docs/submission-body.md) · [Architecture diagram](docs/submission-assets/architecture.png) · [Operations guide](docs/operations-guide.md) · [Verification](docs/verification.md)
 
-## Architecture
+![ShiftFix serverless architecture](docs/submission-assets/architecture.png)
 
-```mermaid
-flowchart LR
-    Browser[React web app] --> Public[API Gateway public static GET routes]
-    Public --> Static[Static Lambda: packaged HTML/CSS/JS]
-    Browser --> Cognito[Cognito email sign-in]
-    Browser --> JWT[API Gateway JWT-protected API]
-    JWT --> API[Python API Lambda]
-    API --> DB[(DynamoDB work orders / activity / timer outbox)]
-    API --> Sign[Short-lived signed upload and download URLs]
-    Browser --> Photos[(Private S3 photo bucket)]
-    Sign -.authorizes.-> Photos
-    DB --> Stream[DynamoDB Stream Lambda]
-    Stream --> Workflow[Step Functions Standard: wait until deadline]
-    Workflow --> Timer[Deadline Lambda: check current version]
-    Timer --> DB
-```
+## The maintenance workflow
 
-The account initially blocked CloudFront creation pending AWS account verification. The deployed approach therefore serves the compiled frontend through public API Gateway GET routes and a static Lambda. The data API remains JWT protected. This is a small demonstration hosting approach, not a CDN replacement. Lambda, API Gateway, DynamoDB, S3 and Step Functions all participate in the working architecture; there is no deployment pipeline or always-running server.
+1. A **Reporter** selects equipment, describes the fault and optionally uploads photographs.
+2. A **Manager** reviews, requests details, rejects with a reason, handles possible duplicates, or approves and assigns the work.
+3. The assigned **Worker** accepts, records blockers or returns an incorrect assignment with an explanation.
+4. The worker submits repair notes and evidence.
+5. The manager verifies completion or sends the repair back for rework.
 
-## First use
+**Admins** manage account access, including Manager access. Managers manage Worker/Reporter access. Every API request rechecks the user's current verified identity and role. Editing a profile or joining a team never grants permissions.
 
-1. Open https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com .
-2. Choose **Create an account**. Use the configured owner email to receive Admin access. Complete first-time onboarding after verification. Other verified accounts start as Reporters.
-3. Confirm the email code and sign in. Passwords are handled by Cognito; they are not placed in source or deployment configuration.
-4. A worker must first sign up and verify their own email. An Admin or Manager can then grant Worker access under **Overview → People & access**. Only Admins can grant Manager access; API permissions update immediately, while the UI refreshes with the next request.
-5. Report a fault, approve/assign it, and walk through worker acceptance, repair submission, and manager verification.
+Duplicate reports remain reviewable. Merges preserve original authors and evidence. A worker's “already repaired” claim requires a manager decision. Stale record versions are rejected, repeated submissions are idempotent, and old deadline executions cannot escalate a newer assignment or completed repair.
 
-The configured owner email is deployment configuration, not a publicly editable role field. The post-confirmation trigger grants Admin access only after the matching email has been verified.
+## Connected factory workspace
+
+- Assets, asset types, categories, teams, locations, zones and sub-zones.
+- Parts, part types, stores locations, vendors, stock adjustments, reorder levels and movement history.
+- Internal purchase records with atomic, one-time stock receiving.
+- Recurring preventive plans and upcoming occurrences awaiting manager review.
+- Manual meter readings, threshold rules, inspection checklists and responses.
+- Installed-part life tracking based on calendar service dates.
+- Filterable dashboards, workload charts, CSV export, bounded asset CSV import and reversible archive controls.
+- Guided onboarding, editable profiles, keyboard navigation, screen-reader feedback, high contrast, larger text and responsive layouts.
+
+### Maintiny assistant
+
+The **Ask Maintiny** launcher floats at the page's bottom-right, with a dismissible introduction. A dedicated workspace keeps private saved chats; both views share the current conversation. Users can start, reopen and delete conversations. Conditional writes prevent late replies from restoring deleted history.
+
+Maintiny searches role-permitted records and prepares reviewed work-order or paused maintenance-rule drafts. Work orders require **Confirm create**; rules open in the normal editor and require an explicit save. Chat cannot grant roles, assign technicians, close repairs or adjust stock.
+
+**Temporary provider disclosure:** Bedrock integration is implemented, but AWS account-level restrictions currently prevent model invocation. The working deployment uses **Gemini as a temporary replacement**, with tools restricted to fictional demonstration data in the selected free-tier mode. Do not enter personal or confidential information in chat. Working Bedrock inference is not claimed. See [assistant architecture, limits and data handling](docs/assistant.md).
+
+## AWS architecture
+
+| Service | Purpose |
+| --- | --- |
+| Amazon Cognito | Verified email sign-in and identity groups. |
+| Amazon API Gateway HTTP API | HTTPS API and JWT-authorized application/assistant routes. |
+| AWS Lambda | Python application logic, static frontend, identity setup, deadlines, stream dispatch, preventive planning and assistant tools. |
+| Amazon DynamoDB on-demand | Work orders, audit activity, catalog, profiles, private chats and timer outbox. |
+| DynamoDB Streams | Dispatch committed timer records. |
+| Amazon S3 | Private fault/repair photographs through temporary signed access. |
+| AWS Step Functions Standard | Durable deadline waits followed by current-version checks. |
+| Amazon EventBridge Scheduler | Hourly preventive-plan checks. |
+| Amazon SQS | Selected asynchronous failure destinations. |
+| Amazon CloudWatch / AWS IAM | Operational logs and scoped runtime roles. |
+| AWS CloudFormation | Infrastructure definitions and manual stack updates. |
+
+A work-order transaction commits its state, activity and required timer record together. DynamoDB Streams invokes a dispatcher that starts a deterministic Step Functions execution. The workflow waits, then invokes a deadline checker. That checker verifies the current deadline/version/status before marking work overdue; Lambda does not remain running throughout the wait.
+
+The initial AWS account could not create CloudFront distributions pending account verification. This prototype serves its compiled frontend through public API Gateway static GET routes and a dedicated Lambda. Application data remains JWT protected. There is no always-running application server or CI/CD pipeline to maintain.
+
+## Try the deployed app
+
+1. Open the [live application](https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20).
+2. Create an account, verify the email code, sign in and complete onboarding. New users start as Reporters unless they are the verified owner configured at deployment.
+3. For a complete assignment workflow, a genuine Worker must first register and verify their account, then receive Worker access from a Manager/Admin. Only Admins can grant Manager access.
+4. Use the report/review/assignment/repair/verification flow. Imported demo people are display-only and cannot sign in or receive new live assignments.
+
+The application contains clearly labeled fictional factory history from **14 September to 14 November 2026**. Connected demo records populate the modules and charts. Seeded plans and automation rules start paused. Fictional history is not customer evidence or a measured maintenance improvement. See [demo dataset notes](docs/demo-data.md).
 
 ## Local development
 
-Requirements: Node.js 24, npm, Python 3.11+ for local tests, and `uv`. Lambda runtime is Python 3.13.
+Requirements: Node.js 24, npm, Python 3.11+ for local tests, and [uv](https://docs.astral.sh/uv/). Deployed Python functions use Python 3.13.
 
 ```sh
 npm ci
+```
+
+Create a local, ignored `public/config.json` using the outputs of **your own** deployment:
+
+```json
+{
+  "apiUrl": "https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com",
+  "region": "YOUR_REGION",
+  "clientId": "YOUR_COGNITO_CLIENT_ID",
+  "userPoolId": "YOUR_COGNITO_USER_POOL_ID"
+}
+```
+
+These are public application identifiers. Never put AWS credentials or model API keys in browser configuration. Local development against an AWS backend requires matching allowed origins in the infrastructure configuration.
+
+```sh
 npm run dev
 ```
 
-The frontend fetches `/config.json` with `{ "apiUrl": "https://...", "region": "ap-south-1", "clientId": "...", "userPoolId": "..." }`. Use real stack outputs in `public/config.json` for local work. These are public identifiers, not AWS access keys. The deployed static bundle includes its runtime config. No cloud credentials belong in the browser.
+### Build and test
 
 ```sh
 npm run build
-uv run --with boto3 --with 'moto[dynamodb,s3]' --with pytest python -m pytest -q tests
+uv run --with boto3 --with 'moto[dynamodb,s3,cognitoidp]' --with pytest python -m pytest -q
+node scripts/verify-resource-cache.mjs
 ```
 
-Backend interfaces and exact request shapes: [backend/CONTRACT.md](backend/CONTRACT.md).
+The recorded backend suite has **177 passing tests**. Build, infrastructure linting and custom Guard checks pass. [Verification notes](docs/verification.md) distinguish simulated browser tests, live IAM-authorized Lambda/API checks and the remaining human multi-account validation boundary.
 
-## Infrastructure and deployment
+For the populated assistant browser suite, generate local fictional fixtures, run Vite on port5174, and execute:
 
-`infra/generate.py` generates `infra/template.json`. The template creates the API, Cognito pool/groups, Lambdas and scoped service roles, encrypted DynamoDB with point-in-time recovery, private encrypted S3 evidence bucket, deadline state machine, stream mapping and failure queue, and short-retention logs.
+```sh
+python3 scripts/build-demo-data.py
+npm run dev -- --port 5174
+# In another terminal:
+node scripts/verify-assistant.mjs
+```
 
-The template parameters are `CodeBucket`, `CodeKey`, and `SupervisorEmail`. Package the backend **without flattening its directory**: handlers use `backend.api.handler`, `backend.auth.post_confirmation`, `backend.deadlines.stream_handler`, `backend.deadlines.expire_handler`, and `backend.static.handler`. The compiled frontend and runtime config belong in `backend/staticfiles/` for static hosting.
+These browser checks use fictional API fixtures; they do not create users or write factory records. `APP_URL` can point at a deployed frontend while API responses remain intercepted fixtures. Accessibility audits run locally because production CSP blocks injected audit styles.
 
-Deploy by creating/updating a CloudFormation stack through the AWS MCP server or CloudFormation console, supplying the package bucket/key and acknowledging the named IAM resources. This repository does not run a CI/CD pipeline. Regenerate the template before deployment so the source and generated artifact agree.
+## Deploy your own stack
 
-Normal deadlines are one hour to acknowledge, four hours for repair, and two hours for verification. Set `ACK_SECONDS`, `REPAIR_SECONDS`, and `VERIFY_SECONDS` in the API Lambda configuration/template for a deliberately shortened recorded demonstration. Do not claim those shortened values are production policy.
+The infrastructure source is `infra/generate.py`; the generated template is `infra/template.json`.
 
-## Data and security boundaries
+1. Configure an authenticated AWS development session using your normal organization/account process.
+2. Generate and validate the template.
+3. Deploy the CloudFormation stack with `CodeBucket`, `CodeKey` and `SupervisorEmail`, acknowledging its named IAM resources. The configured owner must verify that email before receiving Admin access.
+4. Fill `public/config.json` from stack outputs, build the frontend and package the backend.
+5. Upload the ZIP under an unused, immutable S3 key and update the stack's `CodeKey`. Preserve the other parameters and wait for `UPDATE_COMPLETE`.
 
-The API checks verified email claims, role, record visibility, current assignee, allowed state, and optimistic version. A worker cannot mutate another worker's job. Duplicate detection is a machine/category suggestion, not image recognition or an automatic merge. Every state-changing decision writes an activity entry in the same DynamoDB transaction. Photo uploads are limited to five JPEG/PNG/WebP files of at most 5 MiB per batch, signed briefly, and validated before attachment. Evidence is not automatically deleted from open work orders.
+```sh
+python3 infra/generate.py
+npm run build
+python3 scripts/package.py
+```
 
-## Limits and costs
+Keep the `backend/` directory inside the ZIP: handlers use module paths such as `backend.api.handler`. The package includes the compiled frontend. Build output, runtime config, credentials and deployment artifacts are excluded from git.
 
-This is a one-factory hackathon prototype with a fixed machine registry, modest-traffic list queries, and an inbox-based escalation flag. It has no email/SMS/push escalation, spare-parts inventory, offline mode, shift-calendar scheduling, or production multi-tenant boundaries. File checks include content type, actual size and image signatures; they are not a complete malware scan or full image decoder. Photo URLs are temporary. User sessions require fresh sign-in when tokens expire. Abandoned uploads and evidence retention need an explicit cleanup policy before production.
+Optional assistant configuration uses `AssistantProvider`, `GeminiModelId`, `GeminiDataMode`, `GeminiKeySecretArn` and `GeminiKeyVersionId`. Model keys are entered privately through `scripts/configure-gemini-secret.py` and referenced by CloudFormation through Secrets Manager dynamic references. Never commit a key or print resolved Lambda environments. See the [assistant guide](docs/assistant.md) for explicit provider setup and [deployment record](docs/deployment.md) for this prototype's history; historical identifiers are not reusable deployment configuration.
 
-The account was observed on an active **Paid plan with USD 100 credits**, not the Free Plan. Credits are not a hard spending limit. API throttles and short log retention reduce risk but do not guarantee a zero bill. S3 versions, DynamoDB backups, logs, workflow transitions and API/Lambda usage can incur costs.
+## Boundaries and costs
 
-## Cleanup
+- This is a **single-factory prototype**, not isolated multi-tenant SaaS.
+- Meter readings are manual; no live IoT sensor connection is configured. Part-life tracking uses dates rather than predictive models.
+- Deadline escalation appears in the workspace; no email/SMS/push escalation is connected.
+- Internal purchases do not transmit supplier orders or payments.
+- Photos are limited to five JPEG/PNG/WebP files, each up to5MiB. Browser, signed-upload and backend checks enforce boundaries; image signatures are not complete malware scanning.
+- Evidence attached to unresolved work is not silently deleted. Abandoned uploads and production retention need an explicit cleanup policy.
+- Tokens expire; a fresh sign-in may be needed. Accessibility checks cover tested states and are not a complete certification.
+- Serverless does not mean free: storage, object versions, backups, logs, scheduled checks, workflow transitions, model/provider services and key storage can incur costs. Credits are not a hard spending cap.
+- Stateful resources have retention policies. Deleting the stack does not necessarily delete its data or eliminate every storage cost. Review retained resources deliberately; deployment notes record prototype cleanup considerations.
 
-Review and delete the active application stack when finished, after saving needed evidence. S3 evidence, DynamoDB, and Cognito resources use retention policies: stack deletion alone does **not** remove all data or associated storage costs. Inspect stack resources and retained resources before any manual deletion.
+## Project documentation
 
-An earlier failed stack retained these resources, which must be accounted for separately:
+- [Builder Center submission fields](docs/builder-center-fields.md)
+- [Full project article](docs/submission-body.md)
+- [Suggested 2:45 recording script](docs/submission-demo-script.md)
+- [Operations and module behavior](docs/operations-guide.md)
+- [Roles, onboarding, profiles and accessibility](docs/hierarchy-and-onboarding.md)
+- [Assistant, saved chats and provider disclosure](docs/assistant.md)
+- [Backend contract](backend/CONTRACT.md)
+- [Validation and live-check evidence](docs/verification.md)
+- [Deployment record](docs/deployment.md)
+- [Factory imagery credits](docs/image-credits.md)
 
-- DynamoDB table `shiftfix-Table-1WAZJDQCIA0HH`
-- S3 bucket `shiftfix-web-ehvp8oztsmip`
-
-Do not delete them automatically. S3 versioning means cleanup must handle prior versions and delete markers explicitly. Also inspect the deployment package bucket, logs and failure queue. Keep a record of what is retained before confirming cleanup.
-
-See [verification notes](docs/verification.md) and [submission draft](docs/submission.md).
-
-Final verification: 31 backend tests pass; production build and cfn-lint pass; live storage/evidence/deadline integration verified with synthetic QA data. Owner email sign-up and full browser repair flow still pending.
-
-New: [four-role hierarchy, onboarding and accessibility](docs/hierarchy-and-onboarding.md). Backend suite now has 64 passing tests. Factory imagery credits: [image sources](docs/image-credits.md).
-
-The expanded maintenance workspace includes assets and location hierarchy, inventory and one-time purchase receiving, recurring maintenance, manual meter threshold automation, inspections, workload analytics and CSV tools. See [Operations guide](docs/operations-guide.md) for setup order, behavior and prototype boundaries.
-
-A clearly labeled fictional factory history now populates all data sections for the demo. See [Demo dataset and import notes](docs/demo-data.md).
-
-Final-day planning: [primary-source research, code audit, 100-case acceptance matrix and prioritized build plan](docs/research/README.md).
+Factory images are illustrative, credited to YIHAI LASER / Pexels, and do not represent customer repairs. See the image credits for source and license links.

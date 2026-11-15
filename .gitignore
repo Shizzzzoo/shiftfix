@@ -8,3 +8,16 @@ __pycache__/
 public/config.json
 
 backend/staticfiles/
+
+# Local credentials and editor/runtime state
+.env
+.env.*
+!.env.example
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.log
+.DS_Store

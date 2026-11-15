@@ -14,7 +14,7 @@ Tags (select the closest available dropdown values, maximum five):
 Serverless; AWS Lambda; Amazon DynamoDB; AWS Step Functions; Amazon S3.
 
 Repository:
-No remote is configured in this local checkout. Supply the real public GitHub/GitLab URL after source publication; do not invent one. The supplied challenge rules do not make a source repository mandatory.
+https://github.com/Shizzzzoo/shiftfix
 
 Live application:
 https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20

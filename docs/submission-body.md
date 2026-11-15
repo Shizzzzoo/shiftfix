@@ -6,7 +6,7 @@ Two people may report the same machine. A task may reach the wrong technician. A
 
 I built **ShiftFix**, a serverless factory-maintenance workspace, to connect fault reporting, responsibility, evidence and final verification. **Maintiny**, its maintenance assistant, helps users find permitted records and prepare drafts for review.
 
-[Open the deployed application](https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20).
+[Open the deployed application](https://11z3m6ydfe.execute-api.ap-south-1.amazonaws.com/?release=maintiny-v20) · [Source code](https://github.com/Shizzzzoo/shiftfix).
 
 ## The workflow
 
