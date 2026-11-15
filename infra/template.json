@@ -1833,6 +1833,18 @@
                 {
                   "Effect": "Allow",
                   "Action": [
+                    "dynamodb:BatchGetItem"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Table",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
                     "dynamodb:GetItem",
                     "dynamodb:PutItem",
                     "dynamodb:UpdateItem",
@@ -1885,7 +1897,7 @@
       },
       "Metadata": {
         "com.aws.cloudformation.Context": {
-          "why": "Invoke only APAC Nova Micro and reuse checked application reads/report creation",
+          "why": "Bounded model invocation, checked reads and private chat storage",
           "must": "No Cognito group mutation, S3 access, arbitrary models or broad Bedrock access; foundation model region wildcard follows the APAC inference profile"
         }
       }
@@ -1960,8 +1972,8 @@
       },
       "Metadata": {
         "com.aws.cloudformation.Context": {
-          "why": "Role-aware Bedrock search and drafts on separate compute",
-          "must": "All routes JWT protected; only scoped tools; human confirmation for work orders; no role changes; two database leases bound model work because account concurrency quota is10"
+          "why": "Maintiny private saved conversations, scoped search and drafts on separate compute",
+          "must": "All routes JWT protected; per-user bounded chat documents; fenced deletion; only scoped tools; human confirmation for work orders; no role changes; two database leases bound model work because account concurrency quota is10"
         }
       }
     },
@@ -2129,6 +2141,126 @@
           "Ref": "HttpApi"
         },
         "RouteKey": "POST /assistant/review",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "AssistantIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AssistantRoute5": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /assistant/conversations",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "AssistantIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AssistantRoute6": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "POST /assistant/conversations",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "AssistantIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AssistantRoute7": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /assistant/conversations/{id}",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "AssistantIntegration"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "ShiftFix maintenance prototype",
+          "must": "Private data; role-authorized access; no always-running compute"
+        }
+      }
+    },
+    "AssistantRoute8": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "POST /assistant/conversations/{id}/delete",
         "AuthorizationType": "JWT",
         "AuthorizerId": {
           "Ref": "Authorizer"

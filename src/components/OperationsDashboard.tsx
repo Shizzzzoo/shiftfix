@@ -145,7 +145,7 @@ export function OperationsDashboard({
   function breakdown(key: string) {
     const groups = new Map<
       string,
-      { name: string; open: number; closed: number; overdue: number }
+      { id: string; name: string; open: number; closed: number; overdue: number }
     >();
     for (const w of jobs) {
       const id = String(value(w, key) || "unassigned");
@@ -165,7 +165,7 @@ export function OperationsDashboard({
           fallback ||
           id,
       );
-      const g = groups.get(id) || { name, open: 0, closed: 0, overdue: 0 };
+      const g = groups.get(id) || { id, name, open: 0, closed: 0, overdue: 0 };
       if (w.status === "closed") g.closed++;
       else if (!["rejected", "merged", "skipped"].includes(w.status)) {
         if (w.overdue) g.overdue++;
@@ -396,7 +396,7 @@ function Breakdown({
   data,
 }: {
   title: string;
-  data: { name: string; open: number; closed: number; overdue: number }[];
+  data: { id: string; name: string; open: number; closed: number; overdue: number }[];
 }) {
   const max = Math.max(1, ...data.map((d) => d.open + d.closed + d.overdue));
   return (
@@ -435,7 +435,7 @@ function Breakdown({
           aria-label={`${title} breakdown`}
         >
           {data.map((d) => (
-            <li key={d.name}>
+            <li key={d.id}>
               <div>
                 <strong>{d.name}</strong>
                 <span>{d.open + d.closed + d.overdue}</span>

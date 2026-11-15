@@ -16,7 +16,7 @@ export function AssistantDraft({
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [created, setCreated] = useState<R | null>(null),
+    [created, setCreated] = useState<R | null>(draft.confirmedWorkOrder || null),
     [dismissed, setDismissed] = useState(false);
   if (dismissed)
     return (

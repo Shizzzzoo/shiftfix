@@ -60,8 +60,10 @@ The prototype supports managed equipment, a location hierarchy, spare-parts inve
 Record actual deployed behavior; label demonstration data and shortened timers. Omit any segment that has not been verified, and adjust the script rather than implying it worked.
 
 
-## Optional assistant and temporary model provider
+## Maintiny assistant and temporary model provider
 
-Ask ShiftFix searches role-permitted records and prepares work-order or paused maintenance-rule drafts for human review. The AWS Bedrock integration is implemented, but account-level model invocation is currently restricted. A temporary external LLM adapter uses the Gemini API while AWS access is being resolved; the application, authorization, records, evidence and durable maintenance workflows remain on AWS serverless services. This is not a claim of working Bedrock inference.
+Maintiny searches role-permitted records and prepares work-order or paused maintenance-rule drafts for human review. The AWS Bedrock integration is implemented, but account-level model invocation is currently restricted. A temporary external LLM adapter uses the Gemini API while AWS access is being resolved; the application, authorization, records, evidence and durable maintenance workflows remain on AWS serverless services. This is not a claim of working Bedrock inference.
 
 The temporary provider uses Google's free tier and is restricted to fictional demo records. Work-order creation requires explicit confirmation; rules open paused in the regular editor. Provider branding is omitted from the interface, with this implementation choice disclosed here. The temporary integration is deployed and verified with real Gemini replies and checked tool calls for work-order search, low stock, fictional people/assignments, work-order drafts and paused planning/automation drafts. Confirmation replay created one synthetic QA work order, subsequently rejected and archived; no factory action was triggered. Production verification used IAM-authorized Lambda test events, with separate local browser checks. See docs/verification.md for the precise validation boundary.
+
+Maintiny is available from a bottom-left launcher across the app and a dedicated tab with private saved conversations. Both views share the same chat. History survives reload, supports new conversations and confirmed deletion, and rechecks current work-order access. DynamoDB conditional writes prevent late replies from recreating deleted chats. The responsive interface supports keyboard navigation, high contrast and larger text.

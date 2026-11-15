@@ -57,7 +57,7 @@ export function Navigation({
   return (
     <nav aria-label="Main navigation" className="expanded-nav">
       {button("Overview", LayoutDashboard)}
-      {button("Ask ShiftFix", MessageSquare)}
+      {button("Maintiny", MessageSquare)}
       {manage && button("Review inbox", Inbox)}
       {group("Work management", ClipboardList, [
         "Work orders",

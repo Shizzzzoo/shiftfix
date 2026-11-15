@@ -81,7 +81,7 @@ const sections = {
     {
       Icon: Users,
       title: "People, downloads & archive",
-      text: "Ask ShiftFix searches permitted records and prepares drafts for review. My profile keeps your details and access summary. Users control access roles; Teams organize responsibility. Download centre exports CSV and imports asset lists. Finished work can be archived and restored. Billing & usage shows workspace counts.",
+      text: "Maintiny searches permitted records and prepares drafts for review. My profile keeps your details and access summary. Users control access roles; Teams organize responsibility. Download centre exports CSV and imports asset lists. Finished work can be archived and restored. Billing & usage shows workspace counts.",
     },
   ],
 };

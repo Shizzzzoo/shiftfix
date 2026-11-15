@@ -1,4 +1,4 @@
-let ai_routes = Resources.*[ Type == 'AWS::ApiGatewayV2::Route' Properties.RouteKey IN ['GET /assistant/status', 'POST /assistant/chat', 'POST /assistant/search', 'POST /assistant/confirm', 'POST /assistant/review'] ]
+let ai_routes = Resources.*[ Type == 'AWS::ApiGatewayV2::Route' Properties.RouteKey IN ['GET /assistant/status', 'POST /assistant/chat', 'POST /assistant/search', 'POST /assistant/confirm', 'POST /assistant/review', 'GET /assistant/conversations', 'POST /assistant/conversations', 'GET /assistant/conversations/{id}', 'POST /assistant/conversations/{id}/delete'] ]
 rule assistant_routes_are_private when %ai_routes !empty {
   %ai_routes.Properties.AuthorizationType == 'JWT'
   %ai_routes.Properties.AuthorizerId exists

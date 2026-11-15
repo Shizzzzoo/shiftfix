@@ -1,6 +1,14 @@
-# Ask ShiftFix
+# Maintiny
 
-Ask ShiftFix adds a role-aware maintenance assistant and a direct workspace search panel. Open **Ask ShiftFix** in navigation. Chat has its own Lambda and does not hold up catalog or work-order loading. Conversation text stays in the current browser tab's memory; sign-out or a role change removes it.
+Maintiny adds a role-aware maintenance assistant and direct workspace search. Open **Maintiny** in navigation for saved chats, or use the bottom-left launcher from any other signed-in page. Both entry points share the current conversation. Chat has its own Lambda and does not hold up catalog or work-order loading. Completed replies are saved privately in DynamoDB and reload after sign-in; sign-out or a role change clears browser state.
+
+## Saved conversations
+
+Start a new conversation from either the floating panel or the dedicated tab. Conversations are titled from the first question and listed by recent activity. The floating panel can expand into the tab without resetting the chat. Enter sends, Shift+Enter adds a line, and Escape closes dialogs with focus restored. Mobile layouts support the existing high-contrast and larger-text preferences.
+
+Each account can keep 50 active conversations, with 30 exchanges per conversation and a 256KiB document limit. Full chats remain readable; start a new chat to continue. No old messages are silently discarded. The model receives only the last three permitted exchanges as context. Client-supplied history is rejected for saved chats. One generation lease and conditional version checks protect each conversation; request replay returns the saved result without another inference call.
+
+Delete a chat using its trash button and confirm, or cancel to keep it. Deletion removes live messages, title and linked draft payloads, and frees a saved-chat slot. Conditional writes prevent replies or draft writes from restoring a deleted conversation. A content-free tombstone expires after two days. Existing DynamoDB backups/PITR follow their own retention; this is not an immediate backup purge. Previously created work orders and saved rules remain. Chats from an earlier role/data scope are locked with generic titles and can still be deleted. Referenced work-order access is rechecked before display and reuse; unavailable exchanges are hidden. Follow-up replies inherit the references used in their recent context, so reassignment also protects derived answers.
 
 ## Current AWS restriction
 
@@ -31,7 +39,7 @@ Drafts are private to their creator, bound to their role and expire after 15 min
 
 ## Architecture and permissions
 
-Cognito JWT → explicit `/assistant/*` API Gateway routes → Assistant Lambda → checked tools/DynamoDB and Bedrock Converse. Status/search/chat/review/confirm routes require the existing JWT authorizer. The dedicated handler rejects non-assistant paths. IAM permits only the selected Nova inference profile/foundation model, scoped table/index operations, Cognito user/group reads and its log streams. It has no S3 permissions, Cognito group mutation or broad Bedrock administration. The original API role is unchanged.
+Cognito JWT → explicit `/assistant/*` API Gateway routes → Assistant Lambda → checked tools/DynamoDB and Bedrock Converse. Status/search/chat/review/confirm and conversation list/create/read/delete routes require the existing JWT authorizer. The dedicated handler rejects non-assistant paths. IAM permits only the selected Nova inference profile/foundation model, scoped table/index operations and BatchGetItem on the table for saved-history access checks, Cognito user/group reads and its log streams. It has no S3 permissions, Cognito group mutation or broad Bedrock administration. The original API role is unchanged.
 
 IAM Policy Autopilot 0.4.0 analyzed runtime sources. Its baseline included optional/transitively reachable operations and wildcard model resources, so it was not applied wholesale: the deployed policy is restricted to the actual allowlisted assistant operations and concrete stack/model resources. cfn-lint and five custom Guard security rules pass, including a negative control that rejects an anonymous assistant route.
 
@@ -69,7 +77,7 @@ Deployment status and actual inference results must be read from the final relea
 
 ## Current deployment status: working
 
-The owner stored a replacement credential on 15 November 2026. CloudFormation now pins GeminiKeyVersionId=651541d2-b72c-42af-9a5e-0b00a055f034 in the existing secret. The stack reached UPDATE_COMPLETE without changing code or broadening permissions; backend-v17.zip remains active. Complete model discovery authenticated successfully and included gemini-3.5-flash-lite with generateContent support.
+The owner stored a replacement credential on 15 November 2026. CloudFormation now pins GeminiKeyVersionId=651541d2-b72c-42af-9a5e-0b00a055f034 in the existing secret. The stack reached UPDATE_COMPLETE without changing code or broadening permissions; the credential activation initially retained backend-v17.zip; see the latest release in verification.md for current code. Complete model discovery authenticated successfully and included gemini-3.5-flash-lite with generateContent support.
 
 Six actual deployed chat requests returned200 and executed checked tools: exact verification count, low-stock inventory, a work-order draft, a paused recurring-plan draft, a directory-to-assignment lookup, and a paused meter-automation draft. Independent database reads confirmed the returned counts and inventory values. No work order existed before confirmation. Two explicit confirmation calls for the real model-generated QA draft returned the same work order and one reported event. The synthetic test work order was rejected and archived afterward. Neither the plan nor automation draft saved or enabled a catalog rule.
 

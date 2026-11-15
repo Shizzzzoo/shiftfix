@@ -75,17 +75,18 @@ outputs['PlanningFunction']=ref('Planning')
 assistant_logs=allow(['logs:CreateLogStream','logs:PutLogEvents'],sub('arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-Assistant:*'))
 role('AssistantRole','lambda.amazonaws.com',[
  assistant_logs,
+ allow(['dynamodb:BatchGetItem'],arn('Table')),
  allow(['dynamodb:GetItem','dynamodb:PutItem','dynamodb:UpdateItem','dynamodb:Query','dynamodb:ConditionCheckItem'],[arn('Table'),sub('${Table.Arn}/index/GSI1')]),
  allow(['cognito-idp:ListUsers','cognito-idp:AdminListGroupsForUser'],arn('UserPool')),
  allow(['bedrock:InvokeModel'],[sub('arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/apac.amazon.nova-micro-v1:0'),sub('arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-micro-v1:0')])
 ])
 fn('Assistant','backend.assistant_handler.handler','AssistantRole',{**env,'BEDROCK_REGION':ref('AWS::Region'),'BEDROCK_MODEL_ID':'apac.amazon.nova-micro-v1:0','ASSISTANT_PROVIDER':ref('AssistantProvider'),'GEMINI_MODEL_ID':ref('GeminiModelId'),'GEMINI_DATA_MODE':ref('GeminiDataMode'),'GEMINI_API_KEY':{'Fn::If':['UseGemini',sub('{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key::${GeminiKeyVersionId}}}'),ref('AWS::NoValue')]}})
 R['Assistant']['Properties'].update(MemorySize=512,Timeout=28)
-R['Assistant']['Metadata']['com.aws.cloudformation.Context']={'why':'Role-aware Bedrock search and drafts on separate compute','must':'All routes JWT protected; only scoped tools; human confirmation for work orders; no role changes; two database leases bound model work because account concurrency quota is10'}
-R['AssistantRole']['Metadata']['com.aws.cloudformation.Context']={'why':'Invoke only APAC Nova Micro and reuse checked application reads/report creation','must':'No Cognito group mutation, S3 access, arbitrary models or broad Bedrock access; foundation model region wildcard follows the APAC inference profile'}
+R['Assistant']['Metadata']['com.aws.cloudformation.Context']={'why':'Maintiny private saved conversations, scoped search and drafts on separate compute','must':'All routes JWT protected; per-user bounded chat documents; fenced deletion; only scoped tools; human confirmation for work orders; no role changes; two database leases bound model work because account concurrency quota is10'}
+R['AssistantRole']['Metadata']['com.aws.cloudformation.Context']={'why':'Bounded model invocation, checked reads and private chat storage','must':'No Cognito group mutation, S3 access, arbitrary models or broad Bedrock access; foundation model region wildcard follows the APAC inference profile'}
 R['Table']['Properties']['TimeToLiveSpecification']={'AttributeName':'expiresAt','Enabled':True}
 add('AssistantIntegration','AWS::ApiGatewayV2::Integration',{'ApiId':ref('HttpApi'),'IntegrationType':'AWS_PROXY','IntegrationUri':arn('Assistant'),'PayloadFormatVersion':'2.0'})
-for i,(method,path) in enumerate([('GET','status'),('POST','chat'),('POST','search'),('POST','confirm'),('POST','review')]):
+for i,(method,path) in enumerate([('GET','status'),('POST','chat'),('POST','search'),('POST','confirm'),('POST','review'),('GET','conversations'),('POST','conversations'),('GET','conversations/{id}'),('POST','conversations/{id}/delete')]):
  add('AssistantRoute'+str(i),'AWS::ApiGatewayV2::Route',{'ApiId':ref('HttpApi'),'RouteKey':method+' /assistant/'+path,'AuthorizationType':'JWT','AuthorizerId':ref('Authorizer'),'Target':{'Fn::Join':['/',['integrations',ref('AssistantIntegration')]]}})
 add('AssistantPermission','AWS::Lambda::Permission',{'Action':'lambda:InvokeFunction','FunctionName':ref('Assistant'),'Principal':'apigateway.amazonaws.com','SourceArn':sub('arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/assistant/*')})
 outputs['AssistantFunction']=ref('Assistant')

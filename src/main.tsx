@@ -27,7 +27,7 @@ import "./style.css";
 import "./operations.css";
 import "./revamp.css";
 import "./assistant.css";
-import { AssistantWorkspace } from "./components/AssistantWorkspace";
+import { Maintiny } from "./components/Maintiny";
 import { Onboarding } from "./components/Onboarding";
 import { AccessibilityControls } from "./components/AccessibilityControls";
 import { PhotoInput } from "./components/PhotoInput";
@@ -67,9 +67,7 @@ async function api(path: string, body?: Item, key?: string) {
   if (!body && cacheable.has(path)) return resources.get(path);
   const writesWorkspace =
     !!body &&
-    !["/assistant/chat", "/assistant/search", "/assistant/review"].includes(
-      path,
-    );
+    (!path.startsWith("/assistant/") || path === "/assistant/confirm");
   if (writesWorkspace) resources.clear();
   try {
     return await requestApi(path, body, key);
@@ -720,7 +718,7 @@ function App() {
               <p>
                 {page === "My profile"
                   ? "Your details, preferences and workspace access."
-                  : page === "Ask ShiftFix"
+                  : page === "Maintiny"
                     ? "Search, understand and prepare maintenance work with your existing access."
                     : me?.role === "reporter"
                       ? "Report what you notice. Follow every update."
@@ -742,7 +740,7 @@ function App() {
               </button>
             </div>
           )}
-          {page === "Ask ShiftFix" ? null : page === "My profile" && me ? (
+          {page === "Maintiny" ? null : page === "My profile" && me ? (
             <Profile
               me={me}
               machines={machines}
@@ -1520,9 +1518,10 @@ function App() {
             </>
           )}
           {me && (
-            <AssistantWorkspace
+            <Maintiny
               key={me.id + ":" + me.role}
-              visible={page === "Ask ShiftFix"}
+              dedicated={page === "Maintiny"}
+              onOpenDedicated={() => {setSelected(null);setPage("Maintiny")}}
               me={me}
               api={api}
               onSource={(source) => {
