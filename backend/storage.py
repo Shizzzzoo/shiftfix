@@ -4,6 +4,7 @@ import uuid
 import boto3
 from boto3.dynamodb.types import TypeSerializer
 from botocore.exceptions import ClientError
+from . import clients
 from .domain import RuleError
 
 SER = TypeSerializer()
@@ -12,7 +13,7 @@ def encode(item):
     return {k: SER.serialize(v) for k, v in item.items()}
 
 def table():
-    return boto3.resource('dynamodb').Table(os.environ['TABLE_NAME'])
+    return clients.table(os.environ['TABLE_NAME'],clients.region())
 
 def get_job(id):
     job = table().get_item(Key={'PK': 'WORK#' + id, 'SK': 'META'}, ConsistentRead=True).get('Item')

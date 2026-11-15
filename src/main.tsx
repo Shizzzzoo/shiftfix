@@ -29,6 +29,8 @@ import "./revamp.css";
 import { Onboarding } from "./components/Onboarding";
 import { AccessibilityControls } from "./components/AccessibilityControls";
 import { PhotoInput } from "./components/PhotoInput";
+import { createResourceCache } from "./resource-cache";
+import { Profile } from "./components/Profile";
 import { validateImages } from "./uploads";
 type Config = {
   apiUrl: string;
@@ -52,7 +54,24 @@ async function cognito(action: string, body: Item) {
   if (!r.ok) throw Error(d.message || d.__type || "Authentication failed");
   return d;
 }
+const cacheable = new Set(["/catalog", "/machines", "/workorders", "/users"]);
+const resources = createResourceCache<Item>((path) => requestApi(path));
+let cacheIdentity = token;
 async function api(path: string, body?: Item, key?: string) {
+  if (cacheIdentity !== token) {
+    resources.clear();
+    cacheIdentity = token;
+  }
+  if (!body && cacheable.has(path)) return resources.get(path);
+  if (body) resources.clear();
+  try {
+    return await requestApi(path, body, key);
+  } finally {
+    if (body) resources.clear();
+  }
+}
+async function requestApi(path: string, body?: Item, key?: string) {
+  const requestIdentity = token;
   let r = await fetch(config.apiUrl + path, {
     method: body ? "POST" : "GET",
     headers: {
@@ -63,8 +82,11 @@ async function api(path: string, body?: Item, key?: string) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let d = await r.json();
+  if (requestIdentity !== token)
+    throw Error("Your session changed. Please refresh the workspace.");
   if (!r.ok) {
     if (r.status === 401) {
+      resources.clear();
       token = "";
       sessionStorage.removeItem("shiftfix-token");
       window.dispatchEvent(new Event("signed-out"));
@@ -358,6 +380,7 @@ function App() {
     [files, setFiles] = useState<File[]>([]),
     [loading, setLoading] = useState(false),
     [announcement, setAnnouncement] = useState("");
+  const loadId = useRef(0);
   const [showGuide, setShowGuide] = useState(false);
   const guideOrigin = useRef<string | null>(null);
   function openGuide(origin: string) {
@@ -389,36 +412,73 @@ function App() {
   }, [selected?.id]);
   useEffect(() => {
     let f = () => {
+      loadId.current++;
+      resources.clear();
+      setItems([]);
+      setMachines([]);
+      setUsers([]);
+      setSelected(null);
       setLogged(false);
       setMe(null);
     };
     window.addEventListener("signed-out", f);
     return () => window.removeEventListener("signed-out", f);
   }, []);
-  async function load() {
+  async function load(force = true) {
+    const request = ++loadId.current;
+    if (force) resources.clear(["/workorders", "/machines", "/users"]);
     setLoading(true);
     try {
+      const meRequest = api("/me");
+      const peopleRequest = meRequest.then((m) =>
+        ["admin", "manager"].includes(m.role) ? api("/users") : { items: [] },
+      );
+      // People can arrive later without holding up the work list or catalog.
+      void peopleRequest
+        .then((u) => {
+          if (request === loadId.current) setUsers(u.items);
+        })
+        .catch((e: Error) => {
+          if (request === loadId.current) setErr(e.message);
+        });
       let [m, w, ms] = await Promise.all([
-        api("/me"),
+        meRequest,
         api("/workorders"),
         api("/machines"),
       ]);
+      if (request !== loadId.current) return;
+      if (me && me.role !== m.role) {
+        resources.clear();
+        setSelected(null);
+        setItems([]);
+        setUsers([]);
+        setMachines([]);
+        setMe(m);
+        setPage("Work orders");
+        [w, ms] = await Promise.all([api("/workorders"), api("/machines")]);
+        if (request !== loadId.current) return;
+      }
       setMe(m);
       setItems(w.items);
       setMachines(ms.items);
-      if (["admin", "manager"].includes(m.role)) {
-        let u = await api("/users");
-        setUsers(u.items);
-      } else if (!me) setPage("Work orders");
+      if (!["admin", "manager"].includes(m.role) && !me) setPage("Work orders");
     } catch (e: any) {
-      setErr(e.message);
+      if (request === loadId.current) setErr(e.message);
     } finally {
-      setLoading(false);
+      if (request === loadId.current) setLoading(false);
     }
   }
   useEffect(() => {
-    if (logged) load();
+    if (logged) load(false);
   }, [logged]);
+  useEffect(() => {
+    if (!logged) return;
+    const refreshOnFocus = () => {
+      void load(false);
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    return () => window.removeEventListener("focus", refreshOnFocus);
+  }, [logged, me?.role]);
   useEffect(() => {
     document.title = page + " | ShiftFix";
   }, [page]);
@@ -505,8 +565,7 @@ function App() {
           }
           token = "";
           sessionStorage.removeItem("shiftfix-token");
-          setLogged(false);
-          setMe(null);
+          window.dispatchEvent(new Event("signed-out"));
         }}
       />
     );
@@ -581,8 +640,7 @@ function App() {
             onClick={() => {
               token = "";
               sessionStorage.removeItem("shiftfix-token");
-              setLogged(false);
-              setMe(null);
+              window.dispatchEvent(new Event("signed-out"));
             }}
           >
             <LogOut size={18} />
@@ -648,11 +706,13 @@ function App() {
             <div>
               <h1>{page}</h1>
               <p>
-                {me?.role === "reporter"
-                  ? "Report what you notice. Follow every update."
-                  : me?.role === "worker"
-                    ? "Your assignments, evidence, and shift handover."
-                    : "Keep every repair moving. Nothing lost between shifts."}
+                {page === "My profile"
+                  ? "Your details, preferences and workspace access."
+                  : me?.role === "reporter"
+                    ? "Report what you notice. Follow every update."
+                    : me?.role === "worker"
+                      ? "Your assignments, evidence, and shift handover."
+                      : "Keep every repair moving. Nothing lost between shifts."}
               </p>
             </div>
             <button className="primary" onClick={() => setReport(true)}>
@@ -668,10 +728,29 @@ function App() {
               </button>
             </div>
           )}
-          {OPERATIONS_PAGES.includes(page) && me ? (
+          {page === "My profile" && me ? (
+            <Profile
+              me={me}
+              machines={machines}
+              api={api}
+              onSaved={(next) => {
+                setMe(next);
+                setUsers((old) =>
+                  old.map((u) =>
+                    u.id === next.id
+                      ? { ...u, name: next.name, ...next.profile }
+                      : u,
+                  ),
+                );
+                setAnnouncement("Profile updated successfully.");
+              }}
+              onAccess={() => setPage("Users")}
+            />
+          ) : OPERATIONS_PAGES.includes(page) && me ? (
             <OperationsWorkspace
               key={page}
               page={page}
+              initialCatalog={resources.peek("/catalog")?.catalog}
               me={me}
               items={items}
               machines={machines}

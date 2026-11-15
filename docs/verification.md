@@ -93,4 +93,26 @@ Screenshots outside source: /tmp/shiftfix-revamp/dashboard.png, filters.png, mob
 
 Before packaging, IAM-authorized live API checks verified all 18 catalog kinds were populated: active parts8, part types4, part stores3, assets10, asset types4, locations3, zones6, subzones6, teams3, vendors4, purchases12, meters6, inspection templates4, inspection responses28, plans6, automations3, life-tracking6 and categories4. /workorders returned180 total records, including existing real/test records; the completed demo manifest still declares177 fictional work orders. Data was preserved, not re-imported. Live /me confirmed Admin and completed onboarding. Human multi-user browser authentication was not exercised this iteration.
 
-Deployment is pending: AWS MCP began returning Unknown tool for run_script and get_presigned_url after the live reads; CLI fallback returned NoCredentials. Saved package .deploy/backend-latest.zip SHA256(base64) kb5tM2i7OKC1e4IUsZZQhMyrODAjkFecBn4JtiUkn2I=. Intended next immutable key backend-v10.zip; confirm it is unused before upload, update shiftfix-live with UsePreviousTemplate and existing parameters, wait for UPDATE_COMPLETE and match Static/API runtime code hashes plus public asset bundle. Last confirmed live version remains backend-v9.zip. No deployment success is claimed yet.
+The initial publish attempt was blocked by AWS MCP Unknown tool and CLI NoCredentials. After reconnecting through aws login --profile shiftfix, AWS MCP recovered. The combined component/profile/performance release is now deployed as backend-v10.zip; see the checks below. The old local-only package hash is superseded.
+
+
+## Profile and loading release (2026-11-15)
+
+- Production build passed. Backend suite: **112 passed**, including own-profile isolation, legacy profile migration, optimistic concurrency, unknown-field/role/email injection rejection, field limits, SDK reuse without caching authorization, and table identity separation. Existing demo/operations/onboarding browser regressions passed.
+- `scripts/verify-resource-cache.mjs` passes deduplication, TTL, failed-read retry, selective/session invalidation and protection against an older response repopulating cleared cache. GET snapshots exist only in session memory; writes and sign-out invalidate them. Current Cognito authority is still fetched on every backend request.
+- Temporary `/tmp/shiftfix-profile-qa.mjs` verifies saving/reloading/discarding profile edits, 409 recovery, roster visibility of department/title/shift, private phone/bio omission, read-only self authority and management link, and clearing management data after a same-session demotion. With an artificial 1000ms catalog delay, seven warm navigation switches took44–146ms and reused a single catalog GET. These are local fixture measurements, not deployed browser network timings.
+- Profile desktop1440x1000, mobile390x844 and320x800 high contrast/larger text axe scans found zero WCAG A/AA violations in tested states; no overflow, page errors or unexpected console errors. Screenshots `/tmp/shiftfix-profile/desktop.png` and mobile.png were visually inspected. Browser plugin not available; installed Playwright used.
+- CloudFormation `shiftfix-live` in ap-south-1 reached UPDATE_COMPLETE with immutable backend-v10.zip and unchanged template. API/Static Lambda State=Active, LastUpdateStatus=Successful, CodeSha256=`82UqVNl+tirzZaISbsOZPFdiyJC2x50TshQ9OkmA0nc=` matches the652610-byte local ZIP. Public HTML and both new assets respond200. Anonymous /catalog returns401. Deployed login browser smoke passes identity/render/assets without entering credentials.
+- IAM-authorized Lambda test events using the confirmed owner identity saved the exact existing name/department/machine values, upgrading profile version0 to1 while preserving all existing details and Admin authority. An injected role field returned400 with “Access roles and email cannot be changed here”; replay of the old version returned409 with “Your profile changed in another session.” A fresh /me confirms version1; roster responses omit phone and bio.
+- Live reads preserve all18 populated catalog kinds,180 work orders total and the177-work-order fictional demo manifest. Data was not re-imported. No email, password, role or demo identity was changed.
+
+Direct Lambda invocation timings from the AWS MCP host (two samples each, including SDK/network overhead):
+
+| Endpoint | Before v9 (ms) | After v10 (ms) | New handler duration (ms) |
+| --- | --- | --- | --- |
+| /catalog | 4666 / 4796 | 3885 / 1922 | 2187 cold / 587 warm |
+| /workorders | 2859 / 2733 | 2177 / 2134 | 586 / 550 |
+| /machines | 1633 / 1598 | 1165 / 915 | 171 / 167 |
+| /me | 1929 / 1832 | 1023 / 1177 | 181 / 178 |
+
+The new Server-Timing app header isolates handler time. The initial catalog call also initializes SDK pools; on-demand cold starts still exist. These small samples demonstrate improvement, not a p95 or universal end-to-end browser latency guarantee. Authenticated UI checks used local fixtures; production checks used IAM Lambda invocations. Full human multi-user sign-in/repair validation remains separate.

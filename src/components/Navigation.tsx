@@ -90,6 +90,7 @@ export function Navigation({
       {manage && button("Billing & usage", CreditCard)}
       {manage && button("Bulk archive", Archive)}
       {manage && button("Archive", Archive)}
+      {button("My profile", UserRound)}
       {button("Help & accessibility", HelpCircle)}
     </nav>
   );

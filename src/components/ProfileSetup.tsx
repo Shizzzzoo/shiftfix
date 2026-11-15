@@ -106,6 +106,23 @@ export function ProfileSetup({
               </span>
             </label>
           ))}
+          {chosen
+            .filter((id) => !machines.some((m) => m.id === id))
+            .map((id) => (
+              <label key={id}>
+                <input
+                  type="checkbox"
+                  checked
+                  onChange={() => onChosen(chosen.filter((x) => x !== id))}
+                />
+                <span>
+                  <b>{id}</b>
+                  <small>
+                    No longer available · uncheck to remove this preference
+                  </small>
+                </span>
+              </label>
+            ))}
           {!filtered.length && <p>No machines match this search.</p>}
         </div>
       </fieldset>

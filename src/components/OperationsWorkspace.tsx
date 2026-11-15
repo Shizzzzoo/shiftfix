@@ -21,6 +21,7 @@ type R = Record<string, any>;
 type Props = {
   page: string;
   me: R;
+  initialCatalog?: Record<string, R[]>;
   items: R[];
   machines: R[];
   users: R[];
@@ -40,6 +41,7 @@ const localDate = (iso: string) => {
 };
 export function OperationsWorkspace({
   page,
+  initialCatalog,
   me,
   items,
   machines,
@@ -48,9 +50,11 @@ export function OperationsWorkspace({
   open,
   refresh,
 }: Props) {
-  const [catalog, setCatalog] = useState<Record<string, R[]>>({}),
+  const [catalog, setCatalog] = useState<Record<string, R[]>>(
+      initialCatalog || {},
+    ),
     [busy, setBusy] = useState(false),
-    [loading, setLoading] = useState(true),
+    [loading, setLoading] = useState(!initialCatalog),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [search, setSearch] = useState(""),
@@ -65,19 +69,25 @@ export function OperationsWorkspace({
     [preview, setPreview] = useState<R[]>([]),
     [selected, setSelected] = useState<string[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
+  const readId = useRef(0);
   const manages = ["admin", "manager"].includes(me.role);
   const module = MODULES[page];
   const kind = module?.kind;
   async function load() {
+    const request = ++readId.current;
     setLoading(true);
     try {
       const d = await api("/catalog");
+      if (request !== readId.current) return;
       setCatalog(d.catalog || {});
       if (page === "Workflows") setWorkflow(await api("/settings/workflow"));
     } catch (e) {
-      setError((e as Error).message);
+      if (request === readId.current) {
+        setError((e as Error).message);
+        setCatalog({});
+      }
     } finally {
-      setLoading(false);
+      if (request === readId.current) setLoading(false);
     }
   }
   useEffect(() => {
@@ -90,7 +100,10 @@ export function OperationsWorkspace({
     setError("");
     setPreview([]);
     setSelected([]);
-    load();
+    void load();
+    return () => {
+      readId.current++;
+    };
   }, [page]);
   useEffect(() => {
     if (editor || action)
@@ -140,8 +153,7 @@ export function OperationsWorkspace({
     setError("");
     try {
       const out = await api(path, data, key);
-      await load();
-      await refresh();
+      await Promise.all([load(), refresh()]);
       setEditor(null);
       setAction(null);
       setValues({});
@@ -449,7 +461,13 @@ export function OperationsWorkspace({
           {message}
         </div>
       )}
-      {loading && <p role="status">Loading workspace records…</p>}
+      {loading && (
+        <p role="status" className="workspace-loading">
+          {Object.keys(catalog).length
+            ? "Refreshing workspace records…"
+            : "Loading workspace records…"}
+        </p>
+      )}
       {page === "Overview" ? (
         <OperationsDashboard
           items={items}
@@ -992,6 +1010,25 @@ export function OperationsWorkspace({
               <div>
                 <strong>{u.name}</strong>
                 <small>{u.email}</small>
+                {(u.department || u.jobTitle || u.shift) && (
+                  <small>
+                    {[
+                      u.jobTitle,
+                      human(u.department || ""),
+                      u.shift ? human(u.shift) + " shift" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
+                )}
+                {!u.demo && (
+                  <small>
+                    {u.emailVerified
+                      ? "Verified email"
+                      : "Email verification pending"}
+                    {u.enabled === false ? " · Account disabled" : ""}
+                  </small>
+                )}
               </div>
               <span className="badge status">{u.role}</span>
               {u.demo && (

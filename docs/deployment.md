@@ -8,7 +8,7 @@ Rebuild: npm ci; npm run build; python3 scripts/package.py. Runtime identifiers 
 
 Logs retained seven days. DynamoDB, evidence S3 bucket and Cognito pool retained on stack deletion. API throttles five requests/second, burst ten; no provisioned concurrency or servers. Account PAID with $100 remaining credits observed at start; not a hard spend cap. Initial stack was submitted with existing root session; runtime uses scoped service roles. No IAM access keys created. Dedicated human development identity still recommended.
 
-Final deployed immutable CodeKey: backend-v9.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
+Final deployed immutable CodeKey: backend-v10.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
 
 Four-role/onboarding iteration: CloudFormation UPDATE_COMPLETE with immutable backend-v6.zip. Added admin, manager, worker, reporter groups while preserving legacy groups and existing data. Backend authority refreshes live membership; bootstrap owner is Admin. Includes local Pexels factory assets.64 backend tests passed; local onboarding/overview axe scans reported no WCAG A/AA violations in tested states, along with upload preflight/focus/mobile checks. Full human verified sign-up remains owner-driven.
 
@@ -17,4 +17,4 @@ Operations expansion: final template `template-v8.json`, immutable code `backend
 Demo history release: backend-v9.zip deployed with UsePreviousTemplate, UPDATE_COMPLETE. No new infrastructure or identities. Added conditional demo import, page disclosure, display-only roster, paused-plan previews and keyboard-focusable populated charts. See demo-data.md.
 
 
-Pending component revamp (2026-11-15): tested local package is ready for backend-v10.zip. Deployment has not started because the AWS MCP tools became unavailable (Unknown tool) and local AWS CLI returned NoCredentials. Last confirmed live stack still uses backend-v9.zip; reconnect AWS MCP, check the new artifact key is unused and deploy with UsePreviousTemplate. See verification.md for package hash and local/live check boundaries.
+Component/profile/performance release (2026-11-15): backend-v10.zip deployed with UsePreviousTemplate, UPDATE_COMPLETE. AWS MCP recovered after renewing the existing shiftfix session with aws login. No new infrastructure or identities. API and Static code hashes match local package 82UqVNl+tirzZaISbsOZPFdiyJC2x50TshQ9OkmA0nc=; both Active / Successful. Public HTML serves index-BP144Xr6.js and index-DCim6uhp.css. This includes the filter drawer, contained search focus, expanded/replayable onboarding, shared session resource cache, reusable SDK pools and versioned My profile editor. Live profile validation and measured latency are recorded in verification.md.
