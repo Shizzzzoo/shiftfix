@@ -8,6 +8,7 @@ OUT = Path('docs/submission-assets')
 W,H=1800,1650
 s=[f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">', '''<defs>
 <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#dce4ec"/></pattern>
+<pattern id="safety" width="28" height="12" patternUnits="userSpaceOnUse" patternTransform="skewX(-35)"><rect width="14" height="12" fill="#ed8b51"/><rect x="14" width="14" height="12" fill="#263f4d"/></pattern>
 <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#122c42" flood-opacity=".07"/></filter>
 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#526b80"/></marker>
 <marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#8353b7"/></marker>
@@ -16,6 +17,9 @@ def rect(x,y,w,h,fill,stroke='none',r=16,extra=''):
  s.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{fill}" stroke="{stroke}" {extra}/>')
 def text(x,y,t,size=18,color='#405569',weight=400,anchor='start'):
  s.append(f'<text x="{x}" y="{y}" font-family="DejaVu Sans, sans-serif" font-size="{size}" font-weight="{weight}" fill="{color}" text-anchor="{anchor}">{escape(t)}</text>')
+def logo(x,y,size):
+ # Original factory roof + verified-repair mark, shared with the standalone PNG.
+ s.append(f'<g transform="translate({x} {y}) scale({size/100})">{logo_mark}</g>')
 def line(d,purple=False,dash=False):
  color='#8353b7' if purple else '#526b80'
  s.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#{"purple" if purple else "arrow"})" '+('stroke-dasharray="8 6"' if dash else '')+'/>')
@@ -37,18 +41,43 @@ def card(x,y,w,h,kicker,title,lines,color,icon,fill='#fff'):
   size=min(16,16*(w-44)/font.getlength(l))
   text(x+22,y+96+i*25,l,size)
 
+logo_mark='''<rect x="0" y="0" width="100" height="100" rx="23" fill="#e77b3f"/>
+<rect x="5" y="5" width="90" height="90" rx="19" fill="none" stroke="#ffbd8f" stroke-opacity=".5"/>
+<path d="M19 70V43L39 31V43L58 31V47H72V24H82V69H19Z" fill="none" stroke="#fff8ee" stroke-width="4.5" stroke-linejoin="round"/>
+<path d="M29 56V61M42 56V61M55 56V61" stroke="#fff8ee" stroke-width="4.5" stroke-linecap="round"/>
+<circle cx="76" cy="77" r="19" fill="#142732" stroke="#e77b3f" stroke-width="4"/>
+<path d="M68 77L74 83L85 71" fill="none" stroke="#fff8ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'''
 rect(0,0,W,H,'#f5f8fb',r=0)
 s.append(f'<rect x="0" y="210" width="1800" height="1255" fill="url(#dots)"/>')
 rect(0,0,1800,210,'#142732',r=0)
-rect(60,45,8,55,'#ff9258',r=4)
-text(90,83,'ShiftFix',43,'#fff',700)
-text(320,82,'Serverless factory maintenance',30,'#cfdee8',400)
-text(90,122,'From a reported fault to an owned repair, verified completion and a durable audit trail.',19,'#b8cbd8')
+logo(60,36,92)
+text(178,76,'ShiftFix',43,'#fff',700)
+text(410,76,'Serverless factory maintenance',27,'#cfdee8',400)
+text(178,112,'Every fault owned. Every repair verified. Every shift connected.',18,'#b8cbd8')
+# Factory elevation / conveyor line, drawn as an understated engineering sketch.
+s.append('''<g transform="translate(1290 24)" stroke="#608093" stroke-width="2" stroke-linejoin="round">
+<path d="M0 93H450M18 81V42L75 17V42L132 17V48H169V11H186V48H245V81Z" fill="#1b3442"/>
+<path d="M169 11L173 2H183L186 11M31 51H57V65H31ZM86 51H112V65H86ZM141 57H156V71H141Z" fill="none"/>
+<path d="M207 56H229V80H207Z" fill="none"/>
+<rect x="275" y="64" width="150" height="15" rx="7" fill="#1b3442"/>
+<path d="M290 79V92M410 79V92"/>
+<path d="M296 62V41H325V62M356 62V33H385V62" fill="#243f4c" stroke="#c98458"/>
+<path d="M264 45V22H290L308 5L324 14L306 31H282V45" fill="none" stroke="#c98458"/>
+<circle cx="282" cy="22" r="5" fill="#142732" stroke="#c98458"/>
+<circle cx="308" cy="5" r="4" fill="#142732" stroke="#c98458"/>
+<path d="M285 71H414" stroke-dasharray="4 9"/>
+</g>''')
+s.append('<rect x="0" y="204" width="1800" height="6" fill="url(#safety)"/>')
 for x,n,t in [(90,'01','REPORT'),(360,'02','REVIEW & ASSIGN'),(760,'03','REPAIR'),(1070,'04','VERIFY'),(1390,'05','HISTORY')]:
  text(x,177,n,14,'#ffab79',700);text(x+35,177,t,15,'#fff',700)
 
 # Regions are diagram groupings, not VPC or subnet boundaries.
 rect(40,240,1720,1190,'none','#c8d6e2',22,'stroke-width="2"')
+for x,y in [(52,252),(1748,252),(52,1418),(1748,1418)]:
+ s.append(f'<circle cx="{x}" cy="{y}" r="4" fill="#c2cfda"/><path d="M{x-2} {y+2}L{x+2} {y-2}" stroke="#f5f8fb" stroke-width="1.2"/>')
+# Dimension ticks echo an equipment drawing without competing with the graph.
+for y in range(320,1370,32):
+ s.append(f'<path d="M19 {y}H{29 if (y-320)%128==0 else 24}" stroke="#b9c9d5" stroke-width="1"/>')
 text(65,270,'APPLICATION & AWS MANAGED SERVICES',13,'#526b80',700)
 text(1730,270,'ap-south-1  •  Deployed prototype',13,'#526b80',500,'end')
 
@@ -101,4 +130,6 @@ svg='\n'.join(s)
 OUT.mkdir(exist_ok=True,parents=True)
 (OUT/'shiftfix-architecture-hq.svg').write_text(svg)
 cairosvg.svg2png(bytestring=svg.encode(),write_to=str(OUT/'shiftfix-architecture-hq.png'),output_width=W*2,output_height=H*2)
+logo_svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 108 108">{logo_mark}</svg>'
+cairosvg.svg2png(bytestring=logo_svg.encode(),write_to=str(OUT/'shiftfix-factory-logo.png'),output_width=1024,output_height=1024)
 print('Rendered 3600 x 3300 PNG and editable SVG.')

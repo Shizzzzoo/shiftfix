@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1650" viewBox="0 0 1800 1650">
 <defs>
 <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#dce4ec"/></pattern>
+<pattern id="safety" width="28" height="12" patternUnits="userSpaceOnUse" patternTransform="skewX(-35)"><rect width="14" height="12" fill="#ed8b51"/><rect x="14" width="14" height="12" fill="#263f4d"/></pattern>
 <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#122c42" flood-opacity=".07"/></filter>
 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#526b80"/></marker>
 <marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#8353b7"/></marker>
@@ -8,10 +9,28 @@
 <rect x="0" y="0" width="1800" height="1650" rx="0" fill="#f5f8fb" stroke="none" />
 <rect x="0" y="210" width="1800" height="1255" fill="url(#dots)"/>
 <rect x="0" y="0" width="1800" height="210" rx="0" fill="#142732" stroke="none" />
-<rect x="60" y="45" width="8" height="55" rx="4" fill="#ff9258" stroke="none" />
-<text x="90" y="83" font-family="DejaVu Sans, sans-serif" font-size="43" font-weight="700" fill="#fff" text-anchor="start">ShiftFix</text>
-<text x="320" y="82" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#cfdee8" text-anchor="start">Serverless factory maintenance</text>
-<text x="90" y="122" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#b8cbd8" text-anchor="start">From a reported fault to an owned repair, verified completion and a durable audit trail.</text>
+<g transform="translate(60 36) scale(0.92)"><rect x="0" y="0" width="100" height="100" rx="23" fill="#e77b3f"/>
+<rect x="5" y="5" width="90" height="90" rx="19" fill="none" stroke="#ffbd8f" stroke-opacity=".5"/>
+<path d="M19 70V43L39 31V43L58 31V47H72V24H82V69H19Z" fill="none" stroke="#fff8ee" stroke-width="4.5" stroke-linejoin="round"/>
+<path d="M29 56V61M42 56V61M55 56V61" stroke="#fff8ee" stroke-width="4.5" stroke-linecap="round"/>
+<circle cx="76" cy="77" r="19" fill="#142732" stroke="#e77b3f" stroke-width="4"/>
+<path d="M68 77L74 83L85 71" fill="none" stroke="#fff8ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="178" y="76" font-family="DejaVu Sans, sans-serif" font-size="43" font-weight="700" fill="#fff" text-anchor="start">ShiftFix</text>
+<text x="410" y="76" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="400" fill="#cfdee8" text-anchor="start">Serverless factory maintenance</text>
+<text x="178" y="112" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="400" fill="#b8cbd8" text-anchor="start">Every fault owned. Every repair verified. Every shift connected.</text>
+<g transform="translate(1290 24)" stroke="#608093" stroke-width="2" stroke-linejoin="round">
+<path d="M0 93H450M18 81V42L75 17V42L132 17V48H169V11H186V48H245V81Z" fill="#1b3442"/>
+<path d="M169 11L173 2H183L186 11M31 51H57V65H31ZM86 51H112V65H86ZM141 57H156V71H141Z" fill="none"/>
+<path d="M207 56H229V80H207Z" fill="none"/>
+<rect x="275" y="64" width="150" height="15" rx="7" fill="#1b3442"/>
+<path d="M290 79V92M410 79V92"/>
+<path d="M296 62V41H325V62M356 62V33H385V62" fill="#243f4c" stroke="#c98458"/>
+<path d="M264 45V22H290L308 5L324 14L306 31H282V45" fill="none" stroke="#c98458"/>
+<circle cx="282" cy="22" r="5" fill="#142732" stroke="#c98458"/>
+<circle cx="308" cy="5" r="4" fill="#142732" stroke="#c98458"/>
+<path d="M285 71H414" stroke-dasharray="4 9"/>
+</g>
+<rect x="0" y="204" width="1800" height="6" fill="url(#safety)"/>
 <text x="90" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">01</text>
 <text x="125" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">REPORT</text>
 <text x="360" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">02</text>
@@ -23,6 +42,43 @@
 <text x="1390" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">05</text>
 <text x="1425" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">HISTORY</text>
 <rect x="40" y="240" width="1720" height="1190" rx="22" fill="none" stroke="#c8d6e2" stroke-width="2"/>
+<circle cx="52" cy="252" r="4" fill="#c2cfda"/><path d="M50 254L54 250" stroke="#f5f8fb" stroke-width="1.2"/>
+<circle cx="1748" cy="252" r="4" fill="#c2cfda"/><path d="M1746 254L1750 250" stroke="#f5f8fb" stroke-width="1.2"/>
+<circle cx="52" cy="1418" r="4" fill="#c2cfda"/><path d="M50 1420L54 1416" stroke="#f5f8fb" stroke-width="1.2"/>
+<circle cx="1748" cy="1418" r="4" fill="#c2cfda"/><path d="M1746 1420L1750 1416" stroke="#f5f8fb" stroke-width="1.2"/>
+<path d="M19 320H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 352H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 384H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 416H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 448H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 480H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 512H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 544H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 576H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 608H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 640H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 672H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 704H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 736H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 768H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 800H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 832H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 864H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 896H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 928H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 960H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 992H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1024H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1056H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1088H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1120H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1152H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1184H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1216H29" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1248H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1280H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1312H24" stroke="#b9c9d5" stroke-width="1"/>
+<path d="M19 1344H29" stroke="#b9c9d5" stroke-width="1"/>
 <text x="65" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#526b80" text-anchor="start">APPLICATION &amp; AWS MANAGED SERVICES</text>
 <text x="1730" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="500" fill="#526b80" text-anchor="end">ap-south-1  •  Deployed prototype</text>
 <path d="M370 390 H470" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
