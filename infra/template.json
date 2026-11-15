@@ -38,6 +38,12 @@
       ],
       "Description": "Use demo for unpaid API projects; paid requires an active Google billing project."
     },
+    "GeminiKeyVersionId": {
+      "Type": "String",
+      "Default": "",
+      "AllowedPattern": "^$|[A-Za-z0-9-]{32,64}",
+      "Description": "Nonsecret immutable version ID from DescribeSecret metadata; update it when rotating the key."
+    },
     "GeminiKeySecretArn": {
       "Type": "String",
       "Default": "",
@@ -1942,7 +1948,7 @@
               "Fn::If": [
                 "UseGemini",
                 {
-                  "Fn::Sub": "{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key}}"
+                  "Fn::Sub": "{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key::${GeminiKeyVersionId}}}"
                 },
                 {
                   "Ref": "AWS::NoValue"
@@ -2264,6 +2270,21 @@
             ]
           },
           "AssertDescription": "Supply an existing Secrets Manager secret ARN to enable Gemini."
+        },
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "GeminiKeyVersionId"
+                  },
+                  ""
+                ]
+              }
+            ]
+          },
+          "AssertDescription": "Supply the current secret version ID to enable Gemini."
         }
       ]
     }

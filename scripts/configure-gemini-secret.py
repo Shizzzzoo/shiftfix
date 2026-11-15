@@ -13,6 +13,30 @@ import sys
 import warnings
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
+from urllib import request as urlrequest, error as urlerror
+
+
+class NoRedirect(urlrequest.HTTPRedirectHandler):
+    def redirect_request(self,*args,**kwargs):return None
+
+
+def validate_google_key(key):
+    # This checks authentication only. No factory data or inference is sent.
+    req=urlrequest.Request('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1',headers={'x-goog-api-key':key})
+    try:
+        with urlrequest.build_opener(NoRedirect()).open(req,timeout=10):pass
+    except urlerror.HTTPError as exc:
+        reason=''
+        try:
+            raw=exc.read(65537)
+            data=json.loads(raw) if len(raw)<=65536 else {}
+            allowed={'API_KEY_INVALID','API_KEY_EXPIRED','API_KEY_SERVICE_BLOCKED','SERVICE_DISABLED','ACCESS_TOKEN_TYPE_UNSUPPORTED','API_KEY_NOT_AUTHORIZED'}
+            reason=next((d['reason'] for d in data.get('error',{}).get('details',[]) if isinstance(d,dict) and d.get('reason') in allowed and key not in d['reason']),'')
+        except (ValueError,TypeError,AttributeError,OSError):pass
+        raise SystemExit('Google rejected the connection check (HTTP '+str(exc.code)+('/'+reason if reason else '')+'). Nothing new was stored. Check that this key is enabled in Google AI Studio.') from None
+    except (urlerror.URLError,TimeoutError):
+        raise SystemExit('Could not reach Google for the key check. Nothing new was stored; try again when the connection is available.') from None
+    print('Google accepted the connection check. Model access will be tested during deployment.')
 
 
 def main():
@@ -33,6 +57,7 @@ def main():
     first=getpass.getpass('Fresh Gemini API key (hidden): ').strip()
     second=getpass.getpass('Repeat fresh key (hidden): ').strip()
     if not first or first!=second or any(c.isspace() for c in first):raise SystemExit('Keys must be nonempty, match, and contain no whitespace. Nothing stored.')
+    validate_google_key(first)
     value=json.dumps({'api_key':first})
     try:
         metadata=sm.describe_secret(SecretId=args.name)
@@ -45,9 +70,8 @@ def main():
         metadata=sm.create_secret(Name=args.name,Description='ShiftFix temporary Gemini API provider credential',KmsKeyId=key,SecretString=value,Tags=[{'Key':'Project','Value':'ShiftFix'}])
     else:
         sm.put_secret_value(SecretId=metadata['ARN'],SecretString=value)
-    # Only the identifier is output. The assistant may use it in CloudFormation.
-    print('Stored securely. Secret ARN:',metadata['ARN'])
-    print('Only share that ARN, not the key. Key rotation at Google is manual; no stored key is read by this helper.')
+    print('Key stored successfully. You are finished - return to the chat and say stored.')
+    print('No ARN or key needs to be copied. The deployment can locate the saved key automatically.')
 
 
 if __name__=='__main__':

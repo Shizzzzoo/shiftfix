@@ -8,7 +8,7 @@ Rebuild: npm ci; npm run build; python3 scripts/package.py. Runtime identifiers 
 
 Logs retained seven days. DynamoDB, evidence S3 bucket and Cognito pool retained on stack deletion. API throttles five requests/second, burst ten; no provisioned concurrency or servers. Account PAID with $100 remaining credits observed at start; not a hard spend cap. Initial stack was submitted with existing root session; runtime uses scoped service roles. No IAM access keys created. Dedicated human development identity still recommended.
 
-Final deployed immutable CodeKey: backend-v13.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
+Final deployed immutable CodeKey: backend-v17.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
 
 Four-role/onboarding iteration: CloudFormation UPDATE_COMPLETE with immutable backend-v6.zip. Added admin, manager, worker, reporter groups while preserving legacy groups and existing data. Backend authority refreshes live membership; bootstrap owner is Admin. Includes local Pexels factory assets.64 backend tests passed; local onboarding/overview axe scans reported no WCAG A/AA violations in tested states, along with upload preflight/focus/mobile checks. Full human verified sign-up remains owner-driven.
 
@@ -26,3 +26,8 @@ The selected model is apac.amazon.nova-micro-v1:0 through Bedrock Converse in Mu
 
 
 Pending Gemini configuration: backend-v14.zip and updated infra/template.json are prepared and locally validated; not yet deployed. Set AssistantProvider=gemini, GeminiDataMode=demo and GeminiKeySecretArn to the existing secret ARN after the owner uses `uv run scripts/configure-gemini-secret.py`. Preserve CodeBucket/SupervisorEmail and set CodeKey to the immutable artifact. GeminiModelId defaults to gemini-3.5-flash-lite and must be validated with an actual project invocation. Do not read/print Lambda Environment fields after the dynamic secret is resolved. A deploy requires no new runtime permissions and does not remove resources. Current completed deployment remains backend-v13.zip until recorded otherwise.
+
+
+Gemini deployment (2026-11-15): shiftfix-live UPDATE_COMPLETE, CodeKey backend-v17.zip. Final ZIP672672 bytes; API/Static/Assistant runtime hashes all khyuDXuTssD+XVU4MXqR0HLOg0aRiEs1DjH4Ber6y58= and Active / Successful. Frontend index-Cw_JnT2j.js and index-CKNCHDvW.css respond200. Provider=gemini, data mode=demo, model=gemini-3.5-flash-lite. The secret exists at shiftfix/gemini-blIwy0 in ap-south-1; the template pins GeminiKeyVersionId=fca98e23-b1cc-4f6f-a749-e0542a7ab036 using a dynamic reference. No raw key is in a parameter, template, source file or frontend; do not print the Lambda Environment. Refreshing a secret requires updating this nonsecret version parameter. Runtime role permissions were not broadened. The v14 change set showed18 modifications from code/dependency propagation, no additions/removals; template comparison changed only Assistant environment. Later releases update code/diagnostics and finally pin the secret version.
+
+CloudFormation success proves deployment, not accepted Google credentials. Both live invocation and an independent secret-safe Google ListModels check returned API_KEY_INVALID. The active UI reports a credential/access error while direct search remains available. No working live AI reply or project model availability is claimed. See final verification record. The credential helper now validates Google before saving and prints a plain finished message instead of an ARN handoff.

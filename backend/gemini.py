@@ -79,10 +79,39 @@ def normalized(data):
         'usage':{'inputTokens':int(usage.get('promptTokenCount',0)),'outputTokens':int(usage.get('candidatesTokenCount',0))+int(usage.get('thoughtsTokenCount',0))}}
 
 
+
+def error_diagnostic(exc,key,messages):
+    """Admin-only service diagnosis; never pass raw bodies, keys or prompt text."""
+    result={'operation':'generateContent','httpStatus':exc.code}
+    try:
+        raw=exc.read(MAX_RESPONSE+1)
+        if len(raw)>MAX_RESPONSE:return result
+        failure=json.loads(raw).get('error',{})
+        if not isinstance(failure,dict):return result
+        status=failure.get('status','')
+        if isinstance(status,str) and key not in status and re.fullmatch('[A-Z_]{1,50}',status):result['status']=status
+        details=failure.get('details',[])
+        safe_reasons={'API_KEY_INVALID','API_KEY_EXPIRED','API_KEY_SERVICE_BLOCKED','API_KEY_HTTP_REFERRER_BLOCKED','API_KEY_IP_ADDRESS_BLOCKED','ACCESS_TOKEN_TYPE_UNSUPPORTED','SERVICE_DISABLED','API_KEY_API_TARGET_BLOCKED','API_KEY_NOT_AUTHORIZED','RATE_LIMIT_EXCEEDED','BILLING_DISABLED','CONSUMER_INVALID'}
+        reasons=sorted({d['reason'] for d in details if isinstance(d,dict) and isinstance(d.get('reason'),str) and d['reason'] in safe_reasons and key not in d['reason']}) if isinstance(details,list) else []
+        if reasons:result['reasons']=reasons
+        message=failure.get('message')
+        if isinstance(message,str):
+            message=message.replace(key,'[redacted]')
+            for turn in messages:
+                for block in turn.get('content',[]):
+                    text=block.get('text')
+                    if isinstance(text,str) and len(text)>=4:message=message.replace(text,'[request text redacted]')
+            message=re.sub(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}','[email redacted]',message)
+            message=re.sub(r'(?:AIza|AQ\.)[A-Za-z0-9_-]{10,}','[credential redacted]',message)
+            result['message']=message[:1200]
+    except (ValueError,TypeError,AttributeError,OSError):pass
+    return result
+
+
 def converse(messages,system,tools):
     from .assistant import AssistantError
     key=os.environ.get('GEMINI_API_KEY','').strip()
-    if not key:raise AssistantError('The assistant is awaiting secure credential configuration. Direct search is available.',503,'AI_NOT_CONFIGURED')
+    if not key or '{{resolve:' in key:raise AssistantError('The assistant is awaiting secure credential configuration. Direct search is available.',503,'AI_NOT_CONFIGURED')
     try:model=configuration()
     except ValueError as exc:raise AssistantError('The assistant model configuration needs administrator review.',503,'AI_NOT_CONFIGURED') from exc
     req=request.Request('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',
@@ -93,13 +122,14 @@ def converse(messages,system,tools):
         if len(raw)>MAX_RESPONSE:raise AssistantError('The assistant response exceeded its size limit. Ask a narrower question.',503,'AI_INVALID_RESPONSE')
         return normalized(json.loads(raw))
     except error.HTTPError as exc:
-        # Provider error bodies may include request contents or key information.
-        # Never log, return, or stringify them.
+        # Raw provider bodies may contain sensitive text; only sanitized service
+        # diagnostics reach Admins. No body or message enters application logs.
+        diagnostic=error_diagnostic(exc,key,messages)
         print(json.dumps({'assistantError':'GeminiHTTP','status':exc.code}))
-        if exc.code==429:raise AssistantError('The assistant request allowance is busy or exhausted. Try later; direct search is available.',429,'AI_BUSY') from None
-        if exc.code in [401,403]:raise AssistantError('The assistant credential or project access needs administrator review. Direct search is available.',503,'AI_ACCESS_DENIED') from None
-        if exc.code==404:raise AssistantError('The configured assistant model is unavailable for this project. Direct search is available.',503,'AI_MODEL_UNAVAILABLE') from None
-        raise AssistantError('The assistant service could not complete this request. Direct search is available.',503,'AI_UNAVAILABLE') from None
+        if exc.code==429:raise AssistantError('The assistant request allowance is busy or exhausted. Try later; direct search is available.',429,'AI_BUSY',diagnostic) from None
+        if exc.code in [401,403] or exc.code==400 and diagnostic.get('message','').strip().lower()=='api key not valid. please pass a valid api key.':raise AssistantError('The assistant credential or project access needs administrator review. Direct search is available.',503,'AI_ACCESS_DENIED',diagnostic) from None
+        if exc.code==404:raise AssistantError('The configured assistant model is unavailable for this project. Direct search is available.',503,'AI_MODEL_UNAVAILABLE',diagnostic) from None
+        raise AssistantError('The assistant service could not complete this request. Direct search is available.',503,'AI_UNAVAILABLE',diagnostic) from None
     except (error.URLError,TimeoutError,socket.timeout):
         raise AssistantError('The assistant connection timed out. Direct search is available.',503,'AI_TIMEOUT') from None
     except (ValueError,KeyError,TypeError):

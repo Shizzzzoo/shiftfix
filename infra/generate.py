@@ -79,7 +79,7 @@ role('AssistantRole','lambda.amazonaws.com',[
  allow(['cognito-idp:ListUsers','cognito-idp:AdminListGroupsForUser'],arn('UserPool')),
  allow(['bedrock:InvokeModel'],[sub('arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/apac.amazon.nova-micro-v1:0'),sub('arn:${AWS::Partition}:bedrock:*::foundation-model/amazon.nova-micro-v1:0')])
 ])
-fn('Assistant','backend.assistant_handler.handler','AssistantRole',{**env,'BEDROCK_REGION':ref('AWS::Region'),'BEDROCK_MODEL_ID':'apac.amazon.nova-micro-v1:0','ASSISTANT_PROVIDER':ref('AssistantProvider'),'GEMINI_MODEL_ID':ref('GeminiModelId'),'GEMINI_DATA_MODE':ref('GeminiDataMode'),'GEMINI_API_KEY':{'Fn::If':['UseGemini',sub('{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key}}'),ref('AWS::NoValue')]}})
+fn('Assistant','backend.assistant_handler.handler','AssistantRole',{**env,'BEDROCK_REGION':ref('AWS::Region'),'BEDROCK_MODEL_ID':'apac.amazon.nova-micro-v1:0','ASSISTANT_PROVIDER':ref('AssistantProvider'),'GEMINI_MODEL_ID':ref('GeminiModelId'),'GEMINI_DATA_MODE':ref('GeminiDataMode'),'GEMINI_API_KEY':{'Fn::If':['UseGemini',sub('{{resolve:secretsmanager:${GeminiKeySecretArn}:SecretString:api_key::${GeminiKeyVersionId}}}'),ref('AWS::NoValue')]}})
 R['Assistant']['Properties'].update(MemorySize=512,Timeout=28)
 R['Assistant']['Metadata']['com.aws.cloudformation.Context']={'why':'Role-aware Bedrock search and drafts on separate compute','must':'All routes JWT protected; only scoped tools; human confirmation for work orders; no role changes; two database leases bound model work because account concurrency quota is10'}
 R['AssistantRole']['Metadata']['com.aws.cloudformation.Context']={'why':'Invoke only APAC Nova Micro and reuse checked application reads/report creation','must':'No Cognito group mutation, S3 access, arbitrary models or broad Bedrock access; foundation model region wildcard follows the APAC inference profile'}
@@ -94,9 +94,10 @@ t['Parameters'].update({
  'AssistantProvider':{'Type':'String','Default':'bedrock','AllowedValues':['bedrock','gemini']},
  'GeminiModelId':{'Type':'String','Default':'gemini-3.5-flash-lite','AllowedPattern':'gemini-[a-zA-Z0-9.-]{1,100}'},
  'GeminiDataMode':{'Type':'String','Default':'demo','AllowedValues':['demo','paid'],'Description':'Use demo for unpaid API projects; paid requires an active Google billing project.'},
+ 'GeminiKeyVersionId':{'Type':'String','Default':'','AllowedPattern':'^$|[A-Za-z0-9-]{32,64}','Description':'Nonsecret immutable version ID from DescribeSecret metadata; update it when rotating the key.'},
  'GeminiKeySecretArn':{'Type':'String','Default':'','Description':'Existing Secrets Manager secret ARN with api_key JSON field. Never enter a raw key.'}
 })
 t['Conditions']={'UseGemini':{'Fn::Equals':[ref('AssistantProvider'),'gemini']}}
-t['Rules']={'GeminiRequiresSecret':{'RuleCondition':{'Fn::Equals':[ref('AssistantProvider'),'gemini']},'Assertions':[{'Assert':{'Fn::Not':[{'Fn::Equals':[ref('GeminiKeySecretArn'),'']}]},'AssertDescription':'Supply an existing Secrets Manager secret ARN to enable Gemini.'}]}}
+t['Rules']={'GeminiRequiresSecret':{'RuleCondition':{'Fn::Equals':[ref('AssistantProvider'),'gemini']},'Assertions':[{'Assert':{'Fn::Not':[{'Fn::Equals':[ref('GeminiKeySecretArn'),'']}]},'AssertDescription':'Supply an existing Secrets Manager secret ARN to enable Gemini.'},{'Assert':{'Fn::Not':[{'Fn::Equals':[ref('GeminiKeyVersionId'),'']}]},'AssertDescription':'Supply the current secret version ID to enable Gemini.'}]}}
 Path(__file__).with_name('template.json').write_text(json.dumps(t,indent=2))
 print(len(json.dumps(t)), 'bytes')
