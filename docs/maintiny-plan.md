@@ -1,7 +1,7 @@
 # Maintiny implementation contract
 
 - Rename Ask ShiftFix navigation to Maintiny; full page has saved-conversation list, new conversation and per-chat deletion.
-- Bottom-left fixed launcher on every authenticated page except Maintiny. Opens accessible modal chat, same shared state/history as the page. Close/Escape restores launcher focus. Sign-out/role changes clear in-memory state. Reserve sidebar/mobile space for launcher.
+- Bottom-right fixed launcher on every authenticated page except Maintiny. Opens accessible modal chat, same shared state/history as the page. Close/Escape restores launcher focus. Sign-out/role changes clear in-memory state. Keep launcher on the page outside the sidebar; include an Ask Maintiny text label and a dismissible first-use introduction.
 - Store private conversation documents in DynamoDB CHAT#authenticated-user / CHAT#UUID. Atomic active quota50, max30 completed turns, max256KiB document with64KiB headroom before generation. No eviction of older messages; start new chat on full.
 - Bind each thread to role + model data scope; locked chats have generic title and can still be deleted by their owner. Recheck referenced work orders before displaying history or feeding recent3 turn pairs to the model. BatchGetItem with consistent reads/retry unprocessed keys; fail closed on unresolved reads.
 - Per-chat40s generation lease + versioned finalize prevents concurrent lost turns. Request IDs replay saved result without another model call; changed payload with same ID conflicts. Deleted tombstones prevent in-flight reply resurrection.

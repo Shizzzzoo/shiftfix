@@ -1,6 +1,6 @@
 # Maintiny
 
-Maintiny adds a role-aware maintenance assistant and direct workspace search. Open **Maintiny** in navigation for saved chats, or use the bottom-left launcher from any other signed-in page. Both entry points share the current conversation. Chat has its own Lambda and does not hold up catalog or work-order loading. Completed replies are saved privately in DynamoDB and reload after sign-in; sign-out or a role change clears browser state.
+Maintiny adds a role-aware maintenance assistant and direct workspace search. Open **Maintiny** in navigation for saved chats, or use the bottom-right launcher from any other signed-in page. Both entry points share the current conversation. The launcher says “Ask Maintiny” and shows a dismissible “Need a hand?” introduction until it is used or dismissed on that browser/account. Chat has its own Lambda and does not hold up catalog or work-order loading. Completed replies are saved privately in DynamoDB and reload after sign-in; sign-out or a role change clears browser state.
 
 ## Saved conversations
 

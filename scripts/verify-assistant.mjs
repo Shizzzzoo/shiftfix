@@ -1,7 +1,9 @@
-// Maintiny UI checks use local fixtures only. Build demo data; run Vite on5174.
+// API calls use fictional fixtures only. APP_URL also checks the deployed bundle.
+// Default Vite on5174; generate .deploy/demo-fixture.json first.
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import fs from 'node:fs';
+const appUrl=process.env.APP_URL||'http://localhost:5174',fixtureApi=new URL('/qa-fixture-api',appUrl).href;
 const fixture=JSON.parse(fs.readFileSync('.deploy/demo-fixture.json','utf8'));
 fs.mkdirSync('/tmp/shiftfix-maintiny',{recursive:true});
 const browser=await chromium.launch(),ctx=await browser.newContext({viewport:{width:1440,height:1000}}),page=await ctx.newPage();
@@ -12,9 +14,9 @@ const metadata=t=>({id:t.id,title:t.role===role?t.title:'Conversation from previ
 const draft={id:'9b09dd7b-121d-4518-83ec-f3ab0289d4ab',kind:'work_order',context:{machineName:asset.name,machineCode:asset.code||asset.id},expiresAt:Math.floor(Date.now()/1000)+900,payload:{machineId:asset.id,title:'Inspect hydraulic oil leak',description:'Fictional oil below the press.',priority:'high',category:'Hydraulic'}};
 const rule={id:'c58d9043-026d-46bd-b5c8-5c3cf382f523',kind:'automations',context:{meterName:meter.name},expiresAt:Math.floor(Date.now()/1000)+900,payload:{name:'Press meter exception review',meterId:meter.id,enabled:false}};
 page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!/503|410/.test(m.text()))errors.push(m.text())});
-await page.route('**/config.json',r=>r.fulfill({json:{apiUrl:'https://qa.shiftfix.invalid',region:'ap-south-1',clientId:'qa',userPoolId:'qa'}}));
-await page.route('https://qa.shiftfix.invalid/**',async r=>{
- const path=new URL(r.request().url()).pathname,method=r.request().method(),body=r.request().postDataJSON();let status=200,json={items:[]};
+await page.route('**/config.json',r=>r.fulfill({json:{apiUrl:fixtureApi,region:'ap-south-1',clientId:'qa',userPoolId:'qa'}}));
+await page.route(fixtureApi+'/**',async r=>{
+ const path=new URL(r.request().url()).pathname.replace(/^\/qa-fixture-api/,''),method=r.request().method(),body=r.request().postDataJSON();let status=200,json={items:[]};
  if(path==='/me')json=owner();if(path==='/machines')json={items:catalog.assets.filter(x=>!x.archived)};if(path==='/workorders')json={items};if(path==='/users')json={items:[owner(),...fixture.users]};if(path==='/catalog')json={catalog};
  if(path==='/assistant/status')json={configured:true,dataScope:'demo',model:'Maintenance assistant'};
  if(path==='/assistant/conversations'){
@@ -55,9 +57,20 @@ const nav=name=>page.getByRole('navigation',{name:'Main navigation'}).getByRole(
 const launcher=()=>page.getByRole('button',{name:'Open Maintiny assistant',exact:true});
 const widget=()=>page.getByRole('dialog',{name:'Maintiny',exact:true});
 const type=async text=>{await page.getByLabel('Message Maintiny',{exact:true}).fill(text);await page.getByRole('button',{name:'Send message',exact:true}).click()};
-const axe=async label=>{const a=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();console.log(label,JSON.stringify(a.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({html:n.html,why:n.failureSummary}))}))));expect(a.violations).toEqual([])};
+const axe=async label=>{if(!/localhost|127\.0\.0\.1/.test(new URL(appUrl).hostname)){console.log(label,'axe deferred to local suite: production CSP blocks injected audit styles');return}const a=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();console.log(label,JSON.stringify(a.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({html:n.html,why:n.failureSummary}))}))));expect(a.violations).toEqual([])};
 const fit=async()=>expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-await page.goto('http://localhost:5174');await page.getByRole('heading',{name:'Work order statistics',exact:true}).waitFor();
+await page.goto(appUrl);await page.getByRole('heading',{name:'Work order statistics',exact:true}).waitFor();
+await expect(page.getByRole('region',{name:'Meet Maintiny'})).toBeVisible();
+await expect(launcher()).toContainText('Ask Maintiny');
+await axe('Maintiny introduction desktop');
+await page.screenshot({path:'/tmp/shiftfix-maintiny/right-launcher.png'});
+await page.setViewportSize({width:320,height:800});await fit();await axe('Maintiny introduction mobile');
+expect(await page.getByRole('region',{name:'Meet Maintiny'}).evaluate(el=>{const r=el.getBoundingClientRect();return r.top>=0&&r.height<250&&r.right<=innerWidth})).toBeTruthy();
+await page.screenshot({path:'/tmp/shiftfix-maintiny/right-launcher-mobile.png'});
+await page.getByRole('button',{name:'Dismiss Maintiny introduction',exact:true}).click();
+await expect(page.getByRole('region',{name:'Meet Maintiny'})).toHaveCount(0);
+await page.reload();await expect(page.getByRole('region',{name:'Meet Maintiny'})).toHaveCount(0);
+await page.setViewportSize({width:1440,height:1000});
 await expect(launcher()).toBeVisible();await launcher().click();await expect(widget()).toBeVisible();await expect(page.getByText('What needs attention this shift?',{exact:true})).toBeVisible();await axe('Floating empty');
 await type('Show demo work awaiting verification');await expect(page.getByText('There are 3 fictional work orders awaiting verification.',{exact:true})).toBeVisible();expect(threads.size).toBe(1);
 await page.screenshot({path:'/tmp/shiftfix-maintiny/floating.png'});
@@ -74,6 +87,18 @@ failDelete=true;await page.getByRole('button',{name:'Delete current conversation
 // A successful network reply delivered after deletion must not bring a chat back.
 await page.getByLabel('Message Maintiny',{exact:true}).fill('Late reply must not resurrect me');holdNext=true;await page.getByRole('button',{name:'Send message',exact:true}).click();await expect(page.getByRole('button',{name:'Delete current conversation',exact:true})).toBeVisible();await expect.poll(()=>typeof releaseHeld).toBe('function');await page.getByRole('button',{name:'Delete current conversation',exact:true}).click();await page.getByRole('button',{name:'Delete chat',exact:true}).click();await expect(page.getByRole('alertdialog')).not.toBeVisible();releaseHeld();await expect(page.getByText('Late reply must not resurrect me',{exact:true})).toHaveCount(0);
 blocked=true;await type('A blocked question');await expect(page.getByRole('alert').first()).toContainText('unavailable');await expect(page.getByLabel('Message Maintiny',{exact:true})).toHaveValue('A blocked question');await page.getByRole('button',{name:'Search records',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'matching records'})).toBeVisible();blocked=false;
+// Hit testing catches an icon that exists but is covered, clipped or off screen.
+const usableLauncher=async()=>{
+ await expect(launcher()).toBeVisible();
+ expect(await launcher().evaluate(el=>{const r=el.getBoundingClientRect();const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);const sidebar=document.querySelector('.shell > aside').getBoundingClientRect();return r.left>sidebar.right&&r.right>innerWidth-40&&r.top>=0&&r.bottom<=innerHeight&&!!hit&&el.contains(hit)})).toBeTruthy();
+ await launcher().click();await expect(widget()).toBeVisible();await page.getByRole('button',{name:'Close Maintiny',exact:true}).click();
+};
+for(const viewport of [{width:1366,height:768},{width:1440,height:600},{width:390,height:844},{width:320,height:800}]){
+ await page.setViewportSize(viewport);
+ for(const name of ['Overview','Work orders','Requests']){await nav(name).click();await usableLauncher()}
+ await page.getByRole('button',{name:'Report fault',exact:true}).click();await usableLauncher();await page.getByRole('button',{name:'Close report',exact:true}).click();
+}
+await page.setViewportSize({width:1440,height:1000});
 // Launcher exists on each other signed-in destination, including catalog and help views.
 const labels=await page.getByRole('navigation',{name:'Main navigation'}).locator('button[aria-label]').evaluateAll(bs=>bs.map(b=>b.getAttribute('aria-label')));
 for(const name of labels){if(name==='Maintiny')continue;await nav(name).click();await expect(launcher()).toBeVisible()}

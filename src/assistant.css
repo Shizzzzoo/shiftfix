@@ -361,14 +361,22 @@ body[data-contrast="true"] .assistant-draft {
 }
 
 /* Maintiny: shared saved chat workspace and compact global launcher. */
-body[data-maintiny-launcher="true"] .sidebar-bottom { padding-bottom: 68px; }
 .maintiny-launcher {
-  position: fixed; bottom: max(18px, env(safe-area-inset-bottom)); left: 18px;
+  position: fixed; bottom: max(18px, env(safe-area-inset-bottom)); right: max(18px, env(safe-area-inset-right));
   z-index: 80; min-height: 52px; padding: 0 18px; gap: 10px;
   border: 1px solid #d35c28; border-radius: 12px; color: #fff; background: var(--accent);
   box-shadow: 0 4px 16px #11182726; font-size: 14px; font-weight: 700;
 }
 .maintiny-launcher:hover { background: #92330e; }
+/* A quiet, dismissible introduction stays on the page above the launcher. */
+.maintiny-hint { position: fixed; inset: auto max(18px, env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) auto; z-index: 79; width: 280px; padding: 18px; border: 1px solid #d6c4b7; border-radius: 12px; background: #fffaf6; color: #20262e; box-shadow: 0 5px 24px #1118271f; }
+.maintiny-hint::after { content: ''; position: absolute; right: 28px; bottom: -6px; width: 10px; height: 10px; background: #fffaf6; border-right: 1px solid #d6c4b7; border-bottom: 1px solid #d6c4b7; transform: rotate(45deg); }
+.maintiny-hint > strong { display: block; padding-right: 22px; font-size: 14px; }
+.maintiny-hint p { font-size: 12px; color: #526171; line-height: 1.6; margin: 7px 0 12px; }
+.maintiny-hint-dismiss { position: absolute; top: 8px; right: 8px; min-width: 28px; min-height: 28px; padding: 5px; border: 0; background: transparent; color: #526171; }
+.maintiny-hint-start { display: flex; width: 100%; justify-content: space-between; font-size: 12px; padding: 9px 10px; color: #87320c; border-color: #e6cbb9; background: #fff; }
+body[data-contrast="true"] .maintiny-hint, body[data-contrast="true"] .maintiny-hint p { color: #20262e; }
+body[data-large-text="true"] .maintiny-hint p, body[data-large-text="true"] .maintiny-hint-start { font-size: 15px; }
 .maintiny-workspace { min-width: 0; }
 .maintiny-page-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .maintiny-page-intro p { margin: 0; font-size: 13px; color: var(--muted); }
@@ -421,7 +429,7 @@ body[data-maintiny-launcher="true"] .sidebar-bottom { padding-bottom: 68px; }
 .maintiny-error.notice { flex-shrink: 0; display: flex; align-items: flex-start; gap: 8px; margin: 8px 16px; font-size: 12px; padding: 10px; max-height: 110px; overflow: auto; }
 .maintiny-error p { flex: 1; margin: 0; }
 .maintiny-error button { padding: 5px; font-size: 11px; flex-shrink: 0; }
-.maintiny-widget { position: fixed; inset: auto auto 84px 18px; margin: 0; padding: 0; width: min(460px,calc(100vw - 36px)); max-width: none; height: min(720px,calc(100dvh - 112px)); max-height: none; border: 1px solid #aeb8c3; border-radius: 12px; color: var(--ink); background: var(--surface); overflow: hidden; }
+.maintiny-widget { position: fixed; inset: auto max(18px, env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) auto; margin: 0; padding: 0; width: min(460px,calc(100vw - 36px)); max-width: none; height: min(720px,calc(100dvh - 112px)); max-height: none; border: 1px solid #aeb8c3; border-radius: 12px; color: var(--ink); background: var(--surface); overflow: hidden; }
 .maintiny-widget[open] { display: flex; flex-direction: column; }
 .maintiny-widget:not([open]), .maintiny-confirm:not([open]) { display: none; }
 .maintiny-widget::backdrop { background: #131b2730; }
@@ -458,8 +466,7 @@ body[data-large-text="true"] .maintiny-history .maintiny-chat-select > span { fo
  .maintiny-tools button span { display: none; }
 }
 @media(max-width:850px) {
- .maintiny-launcher { left: 12px; padding: 0; width: 51px; min-height: 51px; justify-content: center; }
- .maintiny-launcher > span { display: none; }
+ .maintiny-launcher { right: max(12px, env(safe-area-inset-right)); padding: 0 14px; min-height: 51px; justify-content: center; font-size: 12px; gap: 8px; }
  .maintiny-history-toggle { display: inline-flex; font-size: 12px; }
  .maintiny-page-intro { align-items: flex-start; flex-direction: column; gap: 12px; }
  .maintiny-layout { display: flex; flex-direction: column; height: auto; min-height: 0; }
@@ -479,7 +486,8 @@ body[data-large-text="true"] .maintiny-history .maintiny-chat-select > span { fo
  .maintiny-welcome { padding: 12px 0; }
  .maintiny-welcome h3 { font-size: 18px; }
  .maintiny-welcome p { font-size: 12px; }
- .maintiny-widget { left: 12px; width: calc(100vw - 24px); }
+ .maintiny-widget { right: max(12px, env(safe-area-inset-right)); width: calc(100vw - 24px); }
+ .maintiny-hint { right: max(12px, env(safe-area-inset-right)); width: min(280px,calc(100vw - 110px)); }
  .maintiny-tools button { min-width: 36px; min-height: 36px; }
 }
 @media(prefers-reduced-motion:reduce) { .maintiny-launcher { transition: none; } }
