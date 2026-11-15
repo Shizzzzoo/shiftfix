@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1650" viewBox="0 0 1800 1650">
+<defs>
+<pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#dce4ec"/></pattern>
+<filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#122c42" flood-opacity=".07"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#526b80"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#8353b7"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1650" rx="0" fill="#f5f8fb" stroke="none" />
+<rect x="0" y="210" width="1800" height="1255" fill="url(#dots)"/>
+<rect x="0" y="0" width="1800" height="210" rx="0" fill="#142732" stroke="none" />
+<rect x="60" y="45" width="8" height="55" rx="4" fill="#ff9258" stroke="none" />
+<text x="90" y="83" font-family="DejaVu Sans, sans-serif" font-size="43" font-weight="700" fill="#fff" text-anchor="start">ShiftFix</text>
+<text x="320" y="82" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="400" fill="#cfdee8" text-anchor="start">Serverless factory maintenance</text>
+<text x="90" y="122" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#b8cbd8" text-anchor="start">From a reported fault to an owned repair, verified completion and a durable audit trail.</text>
+<text x="90" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">01</text>
+<text x="125" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">REPORT</text>
+<text x="360" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">02</text>
+<text x="395" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">REVIEW &amp; ASSIGN</text>
+<text x="760" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">03</text>
+<text x="795" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">REPAIR</text>
+<text x="1070" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">04</text>
+<text x="1105" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">VERIFY</text>
+<text x="1390" y="177" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="700" fill="#ffab79" text-anchor="start">05</text>
+<text x="1425" y="177" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#fff" text-anchor="start">HISTORY</text>
+<rect x="40" y="240" width="1720" height="1190" rx="22" fill="none" stroke="#c8d6e2" stroke-width="2"/>
+<text x="65" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#526b80" text-anchor="start">APPLICATION &amp; AWS MANAGED SERVICES</text>
+<text x="1730" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="500" fill="#526b80" text-anchor="end">ap-south-1  •  Deployed prototype</text>
+<path d="M370 390 H470" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="380.95" y="354" width="78.10000000000001" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="420" y="372" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Sign in</text>
+<path d="M220 310 V292 H1040 V330" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="947.0" y="291" width="186.0" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1040" y="309" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">HTTPS requests + JWT</text>
+<path d="M770 390 H870" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<rect x="760.2" y="354" width="119.60000000000001" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="820" y="372" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Validate JWT</text>
+<path d="M1210 390 H1310" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="1204.35" y="354" width="111.30000000000001" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1260" y="372" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Public GETs</text>
+<path d="M1040 480 V590" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="930.4" y="526" width="219.20000000000002" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1040" y="544" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Authenticated app routes</text>
+<path d="M1130 480 V540 H1510 V590" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="1343.6" y="508" width="152.8" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1420" y="526" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Assistant routes</text>
+<path d="M620 480 V590" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="539.45" y="526" width="161.10000000000002" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="620" y="544" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Post-confirmation</text>
+<path d="M770 670 H800 V460 H770" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="752.65" y="492" width="94.7" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="800" y="510" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Set group</text>
+<path d="M870 625 H820 V565 H410 V625 H370" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="531.15" y="562" width="177.70000000000002" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="620" y="580" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Signed photo access</text>
+<path d="M220 480 V590" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<rect x="127.0" y="527" width="186.0" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="220" y="545" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Signed upload / view</text>
+<path d="M1040 750 V870" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="897.2" y="798" width="285.6" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1040" y="816" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Atomic writes + activity + timer</text>
+<path d="M1430 750 V810 H1160 V870" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="1263.8" y="778" width="252.40000000000003" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1390" y="796" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Scoped tools + private chats</text>
+<path d="M1510 750 V870" fill="none" stroke="#8353b7" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#purple)" stroke-dasharray="8 6"/>
+<rect x="1458.5" y="825" width="103.0" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1510" y="843" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#8353b7" text-anchor="middle">Model call</text>
+<path d="M370 950 H470" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="372.65" y="912" width="94.7" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="420" y="930" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Due plans</text>
+<path d="M550 1040 V1080 H220 V1140" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="209.55" y="1086" width="210.9" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="315" y="1104" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Committed TIMER inserts</text>
+<path d="M370 1225 H470" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="376.8" y="1189" width="86.4" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="420" y="1207" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Filtered</text>
+<path d="M770 1225 H870" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="789.25" y="1189" width="61.5" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="820" y="1207" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Start</text>
+<path d="M1210 1225 H1310" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="1225.1" y="1189" width="69.80000000000001" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1260" y="1207" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Invoke</text>
+<path d="M1510 1140 V1080 H1090 V1040" fill="none" stroke="#526b80" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" />
+<rect x="1164.75" y="1086" width="310.5" height="27" rx="6" fill="#f5f8fb" stroke="none" />
+<text x="1320" y="1104" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="500" fill="#526b80" text-anchor="middle">Recheck current state; flag overdue</text>
+<rect x="70" y="330" width="300" height="150" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="70" y="330" width="6" height="150" rx="3" fill="#d26b30" stroke="none" />
+<rect x="90" y="350" width="42" height="42" rx="10" fill="#d26b30" stroke="none" />
+<text x="111" y="378" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">UI</text>
+<text x="148" y="364" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d26b30" text-anchor="start">PEOPLE &amp; INTERFACE</text>
+<text x="148" y="391" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">ShiftFix web app</text>
+<text x="92" y="426" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">React + TypeScript</text>
+<text x="92" y="451" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Reporter · Worker</text>
+<text x="92" y="476" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Manager · Admin</text>
+<rect x="470" y="330" width="300" height="150" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="470" y="330" width="6" height="150" rx="3" fill="#bd456d" stroke="none" />
+<rect x="490" y="350" width="42" height="42" rx="10" fill="#bd456d" stroke="none" />
+<text x="511" y="378" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">ID</text>
+<text x="548" y="364" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#bd456d" text-anchor="start">IDENTITY</text>
+<text x="548" y="391" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Amazon Cognito</text>
+<text x="492" y="426" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Email verification + sign-in</text>
+<text x="492" y="451" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Groups establish authority</text>
+<rect x="870" y="330" width="340" height="150" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="870" y="330" width="6" height="150" rx="3" fill="#8762b7" stroke="none" />
+<rect x="890" y="350" width="42" height="42" rx="10" fill="#8762b7" stroke="none" />
+<text x="911" y="378" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">↗</text>
+<text x="948" y="364" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#8762b7" text-anchor="start">HTTPS ENTRY POINT</text>
+<text x="948" y="391" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">API Gateway</text>
+<text x="892" y="426" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">HTTP API + JWT authorizer</text>
+<text x="892" y="451" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Public static / protected data</text>
+<rect x="1310" y="330" width="400" height="150" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="1310" y="330" width="6" height="150" rx="3" fill="#d77422" stroke="none" />
+<rect x="1330" y="350" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="1351" y="378" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="1388" y="364" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">FRONTEND DELIVERY</text>
+<text x="1388" y="391" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Static Lambda</text>
+<text x="1332" y="426" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Compiled app + hashed assets</text>
+<text x="1332" y="451" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">HTTPS served through API Gateway</text>
+<rect x="70" y="590" width="300" height="160" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="70" y="590" width="6" height="160" rx="3" fill="#32876c" stroke="none" />
+<rect x="90" y="610" width="42" height="42" rx="10" fill="#32876c" stroke="none" />
+<text x="111" y="638" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">S3</text>
+<text x="148" y="624" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#32876c" text-anchor="start">EVIDENCE STORAGE</text>
+<text x="148" y="651" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Amazon S3</text>
+<text x="92" y="686" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Private fault + repair images</text>
+<text x="92" y="711" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Signed access; validated files</text>
+<text x="92" y="736" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">5 MiB per image · 5 per report</text>
+<rect x="470" y="590" width="300" height="160" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="470" y="590" width="6" height="160" rx="3" fill="#d77422" stroke="none" />
+<rect x="490" y="610" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="511" y="638" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="548" y="624" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">ONBOARDING</text>
+<text x="548" y="651" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Auth Lambda</text>
+<text x="492" y="686" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Verified account group setup</text>
+<text x="492" y="711" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Admin owner / Reporter default</text>
+<rect x="870" y="590" width="340" height="160" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="870" y="590" width="6" height="160" rx="3" fill="#d77422" stroke="none" />
+<rect x="890" y="610" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="911" y="638" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="948" y="624" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">BUSINESS RULES</text>
+<text x="948" y="651" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">API Lambda</text>
+<text x="892" y="686" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Role + ownership checks</text>
+<text x="892" y="711" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Review, assignment, verification</text>
+<text x="892" y="736" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Versions + retry idempotency</text>
+<rect x="1310" y="590" width="400" height="160" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="1310" y="590" width="6" height="160" rx="3" fill="#d77422" stroke="none" />
+<rect x="1330" y="610" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="1351" y="638" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="1388" y="624" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">MAINTINY ASSISTANT</text>
+<text x="1388" y="651" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Assistant Lambda</text>
+<text x="1332" y="686" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Allowlisted tools + access checks</text>
+<text x="1332" y="711" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Search, drafts and private history</text>
+<text x="1332" y="736" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Explicit confirmation before creation</text>
+<rect x="70" y="870" width="300" height="170" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="70" y="870" width="6" height="170" rx="3" fill="#a15488" stroke="none" />
+<rect x="90" y="890" width="42" height="42" rx="10" fill="#a15488" stroke="none" />
+<text x="111" y="918" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">◷</text>
+<text x="148" y="904" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#a15488" text-anchor="start">PREVENTIVE MAINTENANCE</text>
+<text x="148" y="931" font-family="DejaVu Sans, sans-serif" font-size="17.948538175699362" font-weight="700" fill="#172b3b" text-anchor="start">Scheduled planning</text>
+<text x="92" y="966" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">EventBridge Scheduler: hourly</text>
+<text x="92" y="991" font-family="DejaVu Sans, sans-serif" font-size="14.524017951133027" font-weight="400" fill="#405569" text-anchor="start">Planning Lambda checks due plans</text>
+<text x="92" y="1016" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Creates review requests once</text>
+<rect x="470" y="870" width="740" height="170" rx="16" fill="#f2f8ff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="470" y="870" width="6" height="170" rx="3" fill="#3576b8" stroke="none" />
+<rect x="490" y="890" width="42" height="42" rx="10" fill="#3576b8" stroke="none" />
+<text x="511" y="918" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">DB</text>
+<text x="548" y="904" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#3576b8" text-anchor="start">SYSTEM OF RECORD</text>
+<text x="548" y="931" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Amazon DynamoDB · on-demand</text>
+<text x="492" y="966" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Work orders · audit activity · assets · inventory · profiles</text>
+<text x="492" y="991" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Private conversations · idempotency records · timer outbox</text>
+<text x="492" y="1016" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Conditional transactions keep state, history and timers consistent.</text>
+<rect x="1310" y="870" width="400" height="170" rx="16" fill="#f8f3fd" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="1310" y="870" width="6" height="170" rx="3" fill="#8353b7" stroke="none" />
+<rect x="1330" y="890" width="42" height="42" rx="10" fill="#8353b7" stroke="none" />
+<text x="1351" y="918" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">AI</text>
+<text x="1388" y="904" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#8353b7" text-anchor="start">TEMPORARY EXTERNAL PROVIDER</text>
+<text x="1388" y="931" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Gemini API</text>
+<text x="1332" y="966" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Fictional demo records only</text>
+<text x="1332" y="991" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Bedrock adapter implemented;</text>
+<text x="1332" y="1016" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">account model access restricted.</text>
+<rect x="70" y="1140" width="300" height="170" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="70" y="1140" width="6" height="170" rx="3" fill="#3576b8" stroke="none" />
+<rect x="90" y="1160" width="42" height="42" rx="10" fill="#3576b8" stroke="none" />
+<text x="111" y="1188" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">≋</text>
+<text x="148" y="1174" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#3576b8" text-anchor="start">DURABLE DEADLINE PATH</text>
+<text x="148" y="1201" font-family="DejaVu Sans, sans-serif" font-size="17.823574462159716" font-weight="700" fill="#172b3b" text-anchor="start">DynamoDB Streams</text>
+<text x="92" y="1236" font-family="DejaVu Sans, sans-serif" font-size="15.645717696210086" font-weight="400" fill="#405569" text-anchor="start">Committed timer-outbox records</text>
+<text x="92" y="1261" font-family="DejaVu Sans, sans-serif" font-size="15.498640179732766" font-weight="400" fill="#405569" text-anchor="start">INSERT events with TIMER# keys</text>
+<rect x="470" y="1140" width="300" height="170" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="470" y="1140" width="6" height="170" rx="3" fill="#d77422" stroke="none" />
+<rect x="490" y="1160" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="511" y="1188" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="548" y="1174" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">EVENT DISPATCH</text>
+<text x="548" y="1201" font-family="DejaVu Sans, sans-serif" font-size="18.31056433731493" font-weight="700" fill="#172b3b" text-anchor="start">Dispatcher Lambda</text>
+<text x="492" y="1236" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Native stream event mapping</text>
+<text x="492" y="1261" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Deterministic execution name</text>
+<rect x="870" y="1140" width="340" height="170" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="870" y="1140" width="6" height="170" rx="3" fill="#b24f91" stroke="none" />
+<rect x="890" y="1160" width="42" height="42" rx="10" fill="#b24f91" stroke="none" />
+<text x="911" y="1188" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">⋈</text>
+<text x="948" y="1174" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#b24f91" text-anchor="start">DURABLE WAIT</text>
+<text x="948" y="1201" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">AWS Step Functions</text>
+<text x="892" y="1236" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Standard state machine</text>
+<text x="892" y="1261" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Wait until deadline → check</text>
+<text x="892" y="1286" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">No Lambda running during wait</text>
+<rect x="1310" y="1140" width="400" height="170" rx="16" fill="#fff" stroke="#dbe4ed" filter="url(#shadow)"/>
+<rect x="1310" y="1140" width="6" height="170" rx="3" fill="#d77422" stroke="none" />
+<rect x="1330" y="1160" width="42" height="42" rx="10" fill="#d77422" stroke="none" />
+<text x="1351" y="1188" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">λ</text>
+<text x="1388" y="1174" font-family="DejaVu Sans, sans-serif" font-size="12" font-weight="700" fill="#d77422" text-anchor="start">VERSION-AWARE FOLLOW-UP</text>
+<text x="1388" y="1201" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#172b3b" text-anchor="start">Deadline Lambda</text>
+<text x="1332" y="1236" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Check deadline version + status</text>
+<text x="1332" y="1261" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Ignore completed / superseded work</text>
+<text x="1332" y="1286" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#405569" text-anchor="start">Update current work if overdue</text>
+<text x="70" y="1374" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#2c586c" text-anchor="start">CORE RELIABILITY PATTERN</text>
+<text x="330" y="1374" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="600" fill="#183747" text-anchor="start">Conditional business update  +  audit event  +  durable, version-checked follow-up</text>
+<rect x="40" y="1460" width="1720" height="112" rx="18" fill="#e9eff5" stroke="none" />
+<text x="70" y="1497" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#183747" text-anchor="start">CloudFormation</text>
+<text x="70" y="1528" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#526b80" text-anchor="start">Manual IaC deployments</text>
+<text x="410" y="1497" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#183747" text-anchor="start">IAM</text>
+<text x="410" y="1528" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#526b80" text-anchor="start">Scoped service roles</text>
+<text x="750" y="1497" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#183747" text-anchor="start">CloudWatch</text>
+<text x="750" y="1528" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#526b80" text-anchor="start">Application + API logs</text>
+<text x="1090" y="1497" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#183747" text-anchor="start">Amazon SQS</text>
+<text x="1090" y="1528" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#526b80" text-anchor="start">Async failure destinations</text>
+<text x="1430" y="1497" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#183747" text-anchor="start">Deployment model</text>
+<text x="1430" y="1528" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#526b80" text-anchor="start">On-demand compute</text>
+<text x="60" y="1610" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="400" fill="#607488" text-anchor="start">Solid: application / event flow     Dashed: identity validation, signed access or external model call</text>
+<text x="1740" y="1610" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="500" fill="#607488" text-anchor="end">github.com/Shizzzzoo/shiftfix</text>
+</svg>
