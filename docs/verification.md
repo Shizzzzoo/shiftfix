@@ -150,3 +150,27 @@ At this preparation checkpoint, DescribeSecret for shiftfix/gemini in ap-south-1
 - Independent diagnostic after final deployment used the official AWS toolkit aws-secrets-manager skill and asm-exec wrapper from aws/agent-toolkit-for-aws. The key resolved inside the child process via a dynamic reference, never into tool arguments or model context. Google ListModels returned HTTP400 / INVALID_ARGUMENT / API_KEY_INVALID, independently of Lambda, tool schema or selected inference model. Shape-only output found no terminal paste markers, control characters, invisible Unicode, quoted values, assignment prefix or surrounding whitespace. No cleanup was attempted because those checks did not find formatting artifacts. The Google key/project issue remains undetermined beyond the explicit rejection; no working Gemini response or model availability is claimed.
 - Browser connector limitations were observed directly: Chrome DevTools could not start without an X server; CUA inventory had no browsers and reported its browser access host unavailable. The CUA segment was completed. Installed headless Chromium performed public app smoke checks; it did not sign into the owner's Google console or inspect any key.
 - Current configured status and independent direct search were checked with IAM-authorized Lambda events for the confirmed owner. These events exercise live service roles and data access, not browser JWT issuance. Existing work orders and demo catalogs were preserved; no new factory work, assignments, role changes or rule activation occurred during this deployment.
+
+
+## Successful live Gemini activation (2026-11-15)
+
+The owner used the corrected helper and stored a fresh AWSCURRENT version651541d2-b72c-42af-9a5e-0b00a055f034 at2026-11-15T11:33:58.733Z. The old fca98e23 version became AWSPREVIOUS. Updating GeminiKeyVersionId refreshed the Assistant environment; CloudFormation reached UPDATE_COMPLETE. API, Static and Assistant still match the tested backend-v17.zip hash khyuDXuTssD+XVU4MXqR0HLOg0aRiEs1DjH4Ber6y58=, State=Active and LastUpdateStatus=Successful. No code changed, so the previous163-test/build/browser/template validation remains the applicable code validation; this iteration checks actual configuration/inference.
+
+The official asm-exec runtime resolver authenticated a Google ListModels request with the replacement credential. All pages were read (one page, no remaining token), and the configured gemini-3.5-flash-lite was present with generateContent support. The key did not enter source, tool arguments, output or assistant context. The earlier credential rejection is resolved.
+
+Six actual deployed POST /assistant/chat calls for the confirmed owner returned200:
+
+| Request | Executed tools | Observed live result |
+| --- | --- | --- |
+| Work awaiting verification | search_work_orders | Three fictional jobs: DEMO-0173, DEMO-0169, DEMO-0164. Independent DynamoDB COUNT=3. |
+| Parts needing replenishment | search_catalog | 6205 bearing, DEMO-SKU-001: quantity2, minimum5. Consistent catalog read confirms both values. |
+| Work-order draft for DEMO-001 | search_catalog, draft_work_order | Draft c7ee905a-b67f-92b7-894a-c828894d0d77, low priority, correct Hydraulic press A demo asset. No work order created by chat. |
+| Paused weekly plan | search_catalog, draft_rule | Draft4b501a94-e53a-bc86-2832-cf220e13d2bc, intervalDays7, nextRun2026-11-20T08:00:00Z, enabled=false. |
+| Meera's active work | search_people, search_work_orders | Two in_progress jobs for fictional Meera: DEMO-0165 and DEMO-0153. Independent DynamoDB COUNT=2 confirms this. |
+| Paused meter automation | search_catalog, draft_rule | Draft8f6d43d3-4312-ec8f-32b6-59b1c736243d for fictional Motor vibration meter, enabled=false. No saved catalog rule with the QA name (COUNT=0). |
+
+The work-order draft title was explicitly synthetic: [QA] Assistant connection verification. A pre-confirmation query returned COUNT=0 for that title/reporter. Two sequential /assistant/confirm requests returned the same work order24592654-566f-4c3e-919b-3303ec51d344 (WO-24592654), status=pending_review. A consistent event query found one reported event despite replay. Normal API reject(version1) and archive(version2) cleaned up the synthetic work; final consistent read status=rejected, archived=true, version=3, createdVia=assistant. No worker assignment or real factory repair was triggered.
+
+The paused-plan /assistant/review request returned200 with enabled=false and the same verified payload for the normal editor. Consistent CAT#plans counts before/after drafting were7/7, including historical/archived entries. The automation remained a private draft; no automation was enabled or saved. Private drafts expire through the existing15-minute checks/TTL. No production catalog record was edited by these model tools.
+
+These are real Google responses through the deployed Lambda and scoped runtime role, not mocked model output. Calls used IAM-authorized test events with the confirmed owner's identity; they do not establish a human multi-user Cognito browser session or a factory pilot. Existing local UI/browser tests separately cover source navigation, confirmation, paused-editor prefill, role resets, expiry and accessibility. Raw provider replies are rendered as safe text; provider branding remains absent from the interface. The written submission now discloses the working temporary model and the outstanding Bedrock account restriction accurately.

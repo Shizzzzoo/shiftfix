@@ -2,7 +2,7 @@
 
 **Title:** ShiftFix: Serverless Factory Maintenance Workflows
 
-**Description:** Turn machine-fault reports and photo evidence into owned maintenance tasks, with supervisor review, duplicate handling, verified repairs, and durable deadline escalation. Includes a temporary external LLM integration while Bedrock access is restricted; AI inference currently awaits a valid provider credential.
+**Description:** Turn machine-fault reports and photo evidence into owned maintenance tasks, with supervisor review, duplicate handling, verified repairs, and durable deadline escalation. Includes an optional assistant using a temporary external LLM while Bedrock account access is restricted.
 
 ## The problem
 
@@ -64,4 +64,4 @@ Record actual deployed behavior; label demonstration data and shortened timers. 
 
 Ask ShiftFix searches role-permitted records and prepares work-order or paused maintenance-rule drafts for human review. The AWS Bedrock integration is implemented, but account-level model invocation is currently restricted. A temporary external LLM adapter uses the Gemini API while AWS access is being resolved; the application, authorization, records, evidence and durable maintenance workflows remain on AWS serverless services. This is not a claim of working Bedrock inference.
 
-The temporary provider uses Google's free tier and is restricted to fictional demo records. Work-order creation requires explicit confirmation; rules open paused in the regular editor. Provider branding is omitted from the interface, with this implementation choice disclosed here. The integration is deployed, but Google currently rejects the configured credential with API_KEY_INVALID. **Before publishing:** verify actual Gemini replies and tool calls against docs/verification.md; do not present a mocked or blocked model call as working.
+The temporary provider uses Google's free tier and is restricted to fictional demo records. Work-order creation requires explicit confirmation; rules open paused in the regular editor. Provider branding is omitted from the interface, with this implementation choice disclosed here. The temporary integration is deployed and verified with real Gemini replies and checked tool calls for work-order search, low stock, fictional people/assignments, work-order drafts and paused planning/automation drafts. Confirmation replay created one synthetic QA work order, subsequently rejected and archived; no factory action was triggered. Production verification used IAM-authorized Lambda test events, with separate local browser checks. See docs/verification.md for the precise validation boundary.
