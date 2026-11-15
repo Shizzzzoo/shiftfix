@@ -1,5 +1,7 @@
 # Submission draft — review before publishing
 
+Current copy-ready material: [Builder Center fields](builder-center-fields.md), [full article](submission-body.md), [architecture image](submission-assets/architecture.png), and [2:45 demo script](submission-demo-script.md). The older planning draft below is retained as history.
+
 **Title:** ShiftFix: Serverless Factory Maintenance Workflows
 
 **Description:** Turn machine-fault reports and photo evidence into owned maintenance tasks, with supervisor review, duplicate handling, verified repairs, and durable deadline escalation. Includes an optional assistant using a temporary external LLM while Bedrock account access is restricted.

@@ -1,0 +1,40 @@
+digraph ShiftFix {
+ graph [rankdir=TB, bgcolor="#ffffff", pad="0.35", nodesep="0.35", ranksep="0.55", fontname="DejaVu Sans", label="ShiftFix | Serverless maintenance across shifts", labelloc=t, fontsize=23, fontcolor="#20262e"];
+ node [shape=box, style="rounded,filled", fillcolor="#f6f8fb", color="#c4ccd7", fontname="DejaVu Sans", fontcolor="#20262e", fontsize=12, margin="0.18,0.12"];
+ edge [color="#667485", fontname="DejaVu Sans", fontsize=10, fontcolor="#465361", arrowsize=0.7];
+ browser [label="React + TypeScript web app\nReporter / Worker / Manager / Admin", fillcolor="#fff1e7", color="#bd4a16"];
+ cognito [label="Amazon Cognito\nVerified identity and roles"];
+ gateway [label="Amazon API Gateway HTTP API\nPublic static GETs | JWT application routes", fillcolor="#fff1e7", color="#bd4a16"];
+ static [label="Static Lambda\nPackaged frontend"];
+ api [label="API Lambda\nState / ownership / version checks"];
+ assistant [label="Maintiny Lambda\nScoped reads + reviewed drafts"];
+ db [label="Amazon DynamoDB (on-demand)\nWork orders, activity, catalog,\nprivate chats and timer outbox", fillcolor="#edf5fe", color="#5c87b1"];
+ s3 [label="Private Amazon S3\nPhoto evidence\nSigned browser uploads/downloads"];
+ stream [label="DynamoDB Streams\nDispatcher Lambda"];
+ workflow [label="AWS Step Functions Standard\nWait until deadline", fillcolor="#f7effc", color="#a075b3"];
+ timer [label="Deadline Lambda\nRecheck version / status; flag overdue"];
+ schedule [label="EventBridge Scheduler\nHourly due-plan check"];
+ planning [label="Planning Lambda\nIdempotent review requests"];
+ gemini [label="Temporary Gemini API\nFictional demo data only", fillcolor="#f6f8fb", style="rounded,filled,dashed"];
+ note [shape=note, label="CloudFormation: manual IaC deployment\nIAM: scoped service roles\nCloudWatch: logs | SQS: failure destinations", fillcolor="#fafafa", fontsize=10];
+ browser -> cognito [label="sign in"];
+ browser -> gateway [label="HTTPS"];
+ gateway -> static [label="public assets"];
+ gateway -> api [label="JWT"];
+ gateway -> assistant [label="JWT"];
+ api -> db [label="conditional transactions"];
+ api -> s3 [label="sign access"];
+ browser -> s3 [label="temporary signed access", style=dashed, constraint=false];
+ assistant -> db;
+ assistant -> gemini [label="demo-only AI", style=dashed];
+ db -> stream [label="TIMER insert"];
+ stream -> workflow;
+ workflow -> timer;
+ timer -> db [label="stale-safe update", constraint=false];
+ schedule -> planning;
+ planning -> db [label="due-plan transaction"];
+ {rank=same; static; api; assistant;}
+ {rank=same; s3; db; gemini;}
+ {rank=same; stream; schedule;}
+ {rank=same; workflow; planning; note;}
+}
