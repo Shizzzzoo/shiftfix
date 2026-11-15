@@ -8,7 +8,7 @@ Rebuild: npm ci; npm run build; python3 scripts/package.py. Runtime identifiers 
 
 Logs retained seven days. DynamoDB, evidence S3 bucket and Cognito pool retained on stack deletion. API throttles five requests/second, burst ten; no provisioned concurrency or servers. Account PAID with $100 remaining credits observed at start; not a hard spend cap. Initial stack was submitted with existing root session; runtime uses scoped service roles. No IAM access keys created. Dedicated human development identity still recommended.
 
-Final deployed immutable CodeKey: backend-v10.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
+Final deployed immutable CodeKey: backend-v13.zip. Additional intermediate retained table: shiftfix-app-Table-RXLR5WMM812U.
 
 Four-role/onboarding iteration: CloudFormation UPDATE_COMPLETE with immutable backend-v6.zip. Added admin, manager, worker, reporter groups while preserving legacy groups and existing data. Backend authority refreshes live membership; bootstrap owner is Admin. Includes local Pexels factory assets.64 backend tests passed; local onboarding/overview axe scans reported no WCAG A/AA violations in tested states, along with upload preflight/focus/mobile checks. Full human verified sign-up remains owner-driven.
 
@@ -18,3 +18,8 @@ Demo history release: backend-v9.zip deployed with UsePreviousTemplate, UPDATE_C
 
 
 Component/profile/performance release (2026-11-15): backend-v10.zip deployed with UsePreviousTemplate, UPDATE_COMPLETE. AWS MCP recovered after renewing the existing shiftfix session with aws login. No new infrastructure or identities. API and Static code hashes match local package 82UqVNl+tirzZaISbsOZPFdiyJC2x50TshQ9OkmA0nc=; both Active / Successful. Public HTML serves index-BP144Xr6.js and index-DCim6uhp.css. This includes the filter drawer, contained search focus, expanded/replayable onboarding, shared session resource cache, reusable SDK pools and versioned My profile editor. Live profile validation and measured latency are recorded in verification.md.
+
+
+Ask ShiftFix release (2026-11-15): CloudFormation UPDATE_COMPLETE with immutable backend-v13.zip. The v11 template adds a separate Assistant Lambda/role, explicit JWT-authorized routes, logs, and DynamoDB expiresAt TTL; existing resources/data are retained. v12/v13 use that completed template and update only CodeKey. Final API, Static and Assistant code hashes match the 668698-byte local package: P8hkk08TqV886L0rYQQygoRCco0Q427vTE6R6N4MvIE=. Public assets index-DjuDc845.js and index-CKNCHDvW.css respond 200. All three checked functions are Active / Successful. TTL status is ENABLED on expiresAt. Assistant role has only ScopedRuntime inline policy and no attached policies; the deployed policy was read back and verified.
+
+The selected model is apac.amazon.nova-micro-v1:0 through Bedrock Converse in Mumbai (APAC cross-Region inference). Live model invocation remains blocked by AWS ValidationException: Operation not allowed; the direct MCP request also reported account verification. The app exposes AI_ACCOUNT_RESTRICTED and independent permission-scoped workspace search. Do not claim working natural-language inference until AWS removes the account restriction. No alternate model/Region bypass or paid support upgrade was attempted. See assistant.md, verification.md and the prepared, unsubmitted aws-bedrock-support.md.

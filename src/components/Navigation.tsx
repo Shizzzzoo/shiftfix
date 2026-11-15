@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  MessageSquare,
   ClipboardList,
   Inbox,
   Activity,
@@ -56,6 +57,7 @@ export function Navigation({
   return (
     <nav aria-label="Main navigation" className="expanded-nav">
       {button("Overview", LayoutDashboard)}
+      {button("Ask ShiftFix", MessageSquare)}
       {manage && button("Review inbox", Inbox)}
       {group("Work management", ClipboardList, [
         "Work orders",

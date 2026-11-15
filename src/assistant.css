@@ -1,0 +1,361 @@
+.assistant-workspace[hidden] {
+  display: none;
+}
+.assistant-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+.assistant-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8e350d;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+}
+.assistant-intro h2 {
+  font-size: 23px;
+}
+.assistant-intro p {
+  max-width: 680px;
+  color: #526171;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+.assistant-access-label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  border: 1px solid #cbdad1;
+  background: #f3f8f5;
+  color: #28583c;
+  border-radius: 5px;
+  padding: 8px 10px;
+}
+.assistant-conversation {
+  overflow: hidden;
+}
+.assistant-conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.assistant-conversation-header strong {
+  font-size: 14px;
+}
+.assistant-conversation-header small {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.assistant-conversation-header > button {
+  font-size: 12px;
+}
+.assistant-transcript {
+  min-height: 260px;
+  max-height: 600px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+}
+.assistant-transcript:focus-visible {
+  outline: 2px solid #4a596b;
+  outline-offset: -3px;
+}
+.assistant-empty {
+  max-width: 690px;
+  margin: 14px auto;
+  text-align: center;
+}
+.assistant-empty > svg {
+  color: #9b3a10;
+  margin-bottom: 14px;
+}
+.assistant-empty h3 {
+  font-size: 18px;
+}
+.assistant-empty p {
+  font-size: 13px;
+  color: #526171;
+}
+.assistant-prompts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+.assistant-prompts button {
+  text-align: left;
+  justify-content: space-between;
+  min-height: 48px;
+  font-size: 12px;
+  background: #fafbfc;
+}
+.assistant-prompts svg {
+  flex-shrink: 0;
+}
+.assistant-message {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  max-width: 90%;
+  margin-bottom: 16px;
+  background: #fafbfc;
+  overflow-wrap: anywhere;
+}
+.assistant-message > strong {
+  font-size: 11px;
+  color: #526171;
+}
+.assistant-message > p {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 8px 0 0;
+}
+.assistant-message.user {
+  margin-left: auto;
+  background: #fff6ee;
+  border-color: #ecd1bb;
+}
+.assistant-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+}
+.assistant-sources button {
+  font-size: 11px;
+  text-align: left;
+  max-width: 100%;
+}
+.assistant-sources svg {
+  flex-shrink: 0;
+}
+.assistant-thinking {
+  color: #526171;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+.assistant-composer {
+  padding: 18px 22px;
+  background: #fafbfc;
+  border-top: 1px solid var(--line);
+}
+.assistant-composer > label {
+  margin-top: 0;
+}
+.assistant-composer > div {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.assistant-composer textarea {
+  min-height: 70px;
+  max-height: 180px;
+  font-weight: 400;
+  font-size: 14px;
+}
+.assistant-composer button {
+  min-width: 84px;
+  min-height: 42px;
+  flex-shrink: 0;
+}
+.assistant-composer small {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.assistant-error,
+.assistant-verification {
+  margin: 16px 22px;
+}
+.assistant-verification p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+.assistant-search {
+  padding: 24px;
+  margin-top: 22px;
+}
+.assistant-search-heading {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.assistant-search-heading > svg {
+  color: #9b3a10;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.assistant-search h2 {
+  font-size: 18px;
+}
+.assistant-search-heading p {
+  font-size: 12px;
+  color: #526171;
+}
+.assistant-search form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.assistant-search form > select {
+  width: 170px;
+  font-size: 13px;
+}
+.assistant-search form .search {
+  flex: 1;
+  min-width: 180px;
+}
+.assistant-search form .search input {
+  width: 100%;
+  font-size: 13px;
+}
+.assistant-search-results {
+  margin-top: 18px;
+  font-size: 13px;
+}
+.assistant-search-results article {
+  border-top: 1px solid var(--line);
+  padding-block: 14px;
+}
+.assistant-search-results article p {
+  color: #526171;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.assistant-search-results button {
+  font-size: 12px;
+}
+.assistant-draft {
+  border: 1px solid #d7c2b0;
+  background: #fff;
+  border-radius: 6px;
+  margin-top: 16px;
+  padding: 18px;
+}
+.assistant-draft-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.assistant-draft-title > svg {
+  color: #94370d;
+  flex-shrink: 0;
+}
+.assistant-draft dl {
+  display: block;
+  margin: 16px 0;
+}
+.assistant-draft dl > div {
+  padding-block: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.assistant-draft dt {
+  font-size: 11px;
+  color: #526171;
+}
+.assistant-draft dd {
+  margin: 5px 0 0;
+  font-size: 13px;
+  text-transform: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.assistant-draft > p {
+  font-size: 12px;
+  color: #526171;
+}
+.assistant-draft-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.assistant-draft-actions button {
+  font-size: 12px;
+}
+.assistant-created {
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.assistant-created p {
+  flex-basis: 100%;
+  margin-bottom: 0;
+}
+.assistant-draft-dismissed {
+  font-size: 12px;
+  color: #526171;
+}
+body[data-large-text="true"] .assistant-message > p {
+  font-size: 17px;
+}
+body[data-contrast="true"] .assistant-message,
+body[data-contrast="true"] .assistant-draft {
+  border-color: #626d7a;
+}
+@media (max-width: 850px) {
+  .assistant-intro {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .assistant-message {
+    max-width: 100%;
+  }
+}
+@media (max-width: 600px) {
+  .assistant-intro h2 {
+    font-size: 20px;
+  }
+  .assistant-conversation-header {
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+  .assistant-transcript {
+    padding: 16px;
+    max-height: 560px;
+  }
+  .assistant-composer {
+    padding: 16px;
+  }
+  .assistant-composer > div {
+    flex-wrap: wrap;
+  }
+  .assistant-composer button {
+    margin-left: auto;
+  }
+  .assistant-prompts {
+    grid-template-columns: 1fr;
+  }
+  .assistant-search {
+    padding: 18px;
+  }
+  .assistant-search form > select {
+    width: 100%;
+  }
+  .assistant-search form .search {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .assistant-error,
+  .assistant-verification {
+    margin: 14px;
+  }
+  .assistant-draft {
+    padding: 14px;
+  }
+}

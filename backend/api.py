@@ -193,6 +193,8 @@ def handler(event,context):
         status=200
     except RuleError as exc:
         status=exc.status; result={'message':str(exc)}
+        if getattr(exc,'code',None):result['code']=exc.code
+        if getattr(exc,'diagnostic',None) and user.get('role')=='admin':result['diagnostic']=exc.diagnostic
     except ClientError as exc:
         # Only operational codes, never request data, tokens, or AWS response bodies.
         print(json.dumps({'awsError':exc.response['Error']['Code']}))
@@ -208,6 +210,9 @@ def handler(event,context):
 
 def route(method,path,data,user,event):
     user=dict(user,role=canonical_role(user['role']))
+    if path.startswith('/assistant/'):
+        from . import assistant
+        return assistant.route(method,path,data,user)
     if method=='GET' and path=='/me': return me(user)
     if method=='POST' and path=='/onboarding': return onboard(data,user)
     if method=='POST' and path=='/profile': return update_profile(data,user)
@@ -310,8 +315,9 @@ def create(data,user,event):
     all_jobs=storage.list_jobs()
     resolved=[j['id'] for j in all_jobs if j['machineId']==machine['id'] and j['category']==category and j['status']=='closed']
     job={**catalog.snapshot(machine),'archived':False,'possibleResolved':bool(resolved),'relatedResolvedIds':resolved,'PK':'WORK#'+id,'SK':'META','GSI1PK':'WORK','GSI1SK':at,'id':id,'number':'WO-'+id[:8].upper(),'machineId':machine['id'],'machineName':machine['name'],'title':text(data.get('title'),'Title',160),'description':text(data.get('description'),'Description',4000),'category':category,'priority':priority,'status':'pending_review','assignmentStatus':'unassigned','assigneeId':'','assigneeName':'','reporterId':user['id'],'reporterName':user['name'],'createdAt':at,'updatedAt':at,'version':1,'deadlineVersion':0,'deadline':'','deadlineKind':'','overdue':False,'blocked':False,'possibleDuplicate':any(j['machineId']==machine['id'] and j['category']==category and j['status'] not in TERMINAL for j in all_jobs),'attachments':file_metadata(data.get('attachments',[]),user,'before'),'relatedId':related,'requestHash':payload_hash}
+    if user.get('_assistantDraftId'):job['createdVia']='assistant'
     if category_id:job['categoryId']=category_id
-    try: storage.write(job,user,'reported',extra=[catalog.revision_guard(expected_revision),catalog.work_reference(job)])
+    try: storage.write(job,user,'reported','Created from a human-confirmed assistant draft.' if user.get('_assistantDraftId') else '',extra=[catalog.revision_guard(expected_revision),catalog.work_reference(job)])
     except RuleError as exc:
         if exc.status==409:
             try: previous=storage.get_job(id)

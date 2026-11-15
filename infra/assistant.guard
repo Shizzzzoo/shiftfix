@@ -1,0 +1,28 @@
+let ai_routes = Resources.*[ Type == 'AWS::ApiGatewayV2::Route' Properties.RouteKey IN ['GET /assistant/status', 'POST /assistant/chat', 'POST /assistant/search', 'POST /assistant/confirm', 'POST /assistant/review'] ]
+rule assistant_routes_are_private when %ai_routes !empty {
+  %ai_routes.Properties.AuthorizationType == 'JWT'
+  %ai_routes.Properties.AuthorizerId exists
+}
+rule assistant_has_short_timeout {
+  Resources.Assistant.Properties.Timeout <= 28
+  Resources.Assistant.Properties.Environment.Variables.BEDROCK_MODEL_ID == 'apac.amazon.nova-micro-v1:0'
+}
+let actions = Resources.AssistantRole.Properties.Policies[*].PolicyDocument.Statement[*].Action[*]
+rule assistant_has_no_privilege_mutation {
+  %actions NOT IN ['*', 'bedrock:*', 'iam:*', 'cognito-idp:AdminAddUserToGroup', 'cognito-idp:AdminRemoveUserFromGroup', 's3:PutObject', 's3:*']
+}
+let buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+rule evidence_is_private when %buckets !empty {
+  %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicAcls == true
+  %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicPolicy == true
+  %buckets.Properties.PublicAccessBlockConfiguration.IgnorePublicAcls == true
+  %buckets.Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets == true
+  %buckets.Properties.BucketEncryption exists
+}
+rule table_remains_protected {
+  Resources.Table.DeletionPolicy == 'Retain'
+  Resources.Table.UpdateReplacePolicy == 'Retain'
+  Resources.Table.Properties.SSESpecification.SSEEnabled == true
+  Resources.Table.Properties.PointInTimeRecoverySpecification.PointInTimeRecoveryEnabled == true
+  Resources.Table.Properties.TimeToLiveSpecification.AttributeName == 'expiresAt'
+}

@@ -22,6 +22,8 @@ type Props = {
   page: string;
   me: R;
   initialCatalog?: Record<string, R[]>;
+  assistantDraft?: R | null;
+  onDraftConsumed?: () => void;
   items: R[];
   machines: R[];
   users: R[];
@@ -42,6 +44,8 @@ const localDate = (iso: string) => {
 export function OperationsWorkspace({
   page,
   initialCatalog,
+  assistantDraft,
+  onDraftConsumed,
   me,
   items,
   machines,
@@ -114,6 +118,15 @@ export function OperationsWorkspace({
         block: "start",
       });
   }, [editor, action]);
+  useEffect(() => {
+    if (assistantDraft && assistantDraft.kind === kind && !loading && manages) {
+      edit(assistantDraft.payload);
+      setMessage(
+        "Review this paused assistant draft, then save it using the regular form.",
+      );
+      onDraftConsumed?.();
+    }
+  }, [assistantDraft?.id, loading]);
   const options = (ref?: string) =>
     ref === "assets"
       ? machines

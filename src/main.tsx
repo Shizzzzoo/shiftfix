@@ -26,6 +26,8 @@ import {
 import "./style.css";
 import "./operations.css";
 import "./revamp.css";
+import "./assistant.css";
+import { AssistantWorkspace } from "./components/AssistantWorkspace";
 import { Onboarding } from "./components/Onboarding";
 import { AccessibilityControls } from "./components/AccessibilityControls";
 import { PhotoInput } from "./components/PhotoInput";
@@ -63,11 +65,16 @@ async function api(path: string, body?: Item, key?: string) {
     cacheIdentity = token;
   }
   if (!body && cacheable.has(path)) return resources.get(path);
-  if (body) resources.clear();
+  const writesWorkspace =
+    !!body &&
+    !["/assistant/chat", "/assistant/search", "/assistant/review"].includes(
+      path,
+    );
+  if (writesWorkspace) resources.clear();
   try {
     return await requestApi(path, body, key);
   } finally {
-    if (body) resources.clear();
+    if (writesWorkspace) resources.clear();
   }
 }
 async function requestApi(path: string, body?: Item, key?: string) {
@@ -91,7 +98,10 @@ async function requestApi(path: string, body?: Item, key?: string) {
       sessionStorage.removeItem("shiftfix-token");
       window.dispatchEvent(new Event("signed-out"));
     }
-    throw Error(d.message || d.error || "Request failed");
+    throw Object.assign(new Error(d.message || d.error || "Request failed"), {
+      code: d.code,
+      status: r.status,
+    });
   }
   return d;
 }
@@ -380,6 +390,7 @@ function App() {
     [files, setFiles] = useState<File[]>([]),
     [loading, setLoading] = useState(false),
     [announcement, setAnnouncement] = useState("");
+  const [assistantDraft, setAssistantDraft] = useState<Item | null>(null);
   const loadId = useRef(0);
   const [showGuide, setShowGuide] = useState(false);
   const guideOrigin = useRef<string | null>(null);
@@ -418,6 +429,7 @@ function App() {
       setMachines([]);
       setUsers([]);
       setSelected(null);
+      setAssistantDraft(null);
       setLogged(false);
       setMe(null);
     };
@@ -708,11 +720,13 @@ function App() {
               <p>
                 {page === "My profile"
                   ? "Your details, preferences and workspace access."
-                  : me?.role === "reporter"
-                    ? "Report what you notice. Follow every update."
-                    : me?.role === "worker"
-                      ? "Your assignments, evidence, and shift handover."
-                      : "Keep every repair moving. Nothing lost between shifts."}
+                  : page === "Ask ShiftFix"
+                    ? "Search, understand and prepare maintenance work with your existing access."
+                    : me?.role === "reporter"
+                      ? "Report what you notice. Follow every update."
+                      : me?.role === "worker"
+                        ? "Your assignments, evidence, and shift handover."
+                        : "Keep every repair moving. Nothing lost between shifts."}
               </p>
             </div>
             <button className="primary" onClick={() => setReport(true)}>
@@ -728,7 +742,7 @@ function App() {
               </button>
             </div>
           )}
-          {page === "My profile" && me ? (
+          {page === "Ask ShiftFix" ? null : page === "My profile" && me ? (
             <Profile
               me={me}
               machines={machines}
@@ -751,6 +765,8 @@ function App() {
               key={page}
               page={page}
               initialCatalog={resources.peek("/catalog")?.catalog}
+              assistantDraft={assistantDraft}
+              onDraftConsumed={() => setAssistantDraft(null)}
               me={me}
               items={items}
               machines={machines}
@@ -1502,6 +1518,38 @@ function App() {
                 </section>
               )}
             </>
+          )}
+          {me && (
+            <AssistantWorkspace
+              key={me.id + ":" + me.role}
+              visible={page === "Ask ShiftFix"}
+              me={me}
+              api={api}
+              onSource={(source) => {
+                if (source.kind === "work_order") {
+                  setPage("Work orders");
+                  void detail(source.id);
+                } else if (source.kind === "page") {
+                  setSelected(null);
+                  setPage(source.page);
+                }
+              }}
+              onCreated={(id) => {
+                setPage("Work orders");
+                void detail(id);
+              }}
+              onRefresh={load}
+              onReview={async (draft) => {
+                const fresh = await api("/assistant/review", {
+                  draftId: draft.id,
+                });
+                setAssistantDraft(fresh.draft);
+                setSelected(null);
+                setPage(
+                  fresh.draft.kind === "plans" ? "Recurrence" : "Automations",
+                );
+              }}
+            />
           )}
         </div>
       </main>
